@@ -12,6 +12,8 @@ import java.util.Locale;
  */
 public final class Main {
 
+    private static final String VERSION = "1.0.0";
+
     /**
      * Забороняє створення екземплярів службового класу.
      */
@@ -31,6 +33,11 @@ public final class Main {
             if ("--help".equals(args[i])) {
                 printHelp();
                 return;
+            }
+
+            if ("--version".equals(args[i])) {
+                printVersion();
+                 return;
             }
 
             if ("--input".equals(args[i])) {
@@ -93,9 +100,19 @@ public final class Main {
      * Виводить довідку про параметри командного рядка.
      */
     private static void printHelp() {
-        System.out.printf(
-                "Використання: java -jar <файл.jar> "
-                        + "[--help] [--input <файл>] [--output <файл>]%n");
+    System.out.printf(
+            "Використання: java -jar <файл.jar> "
+                    + "[--help] [--version] "
+                    + "[--input <файл>] [--output <файл>]%n");
+    }
+
+    /**
+    * Виводить версію програми.
+    */
+    private static void printVersion() {
+    System.out.printf(
+            "Комунальні показники %s%n",
+            VERSION);
     }
 
     /**

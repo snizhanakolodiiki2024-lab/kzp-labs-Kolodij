@@ -10,6 +10,8 @@ import java.util.Locale;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 
 /**
  * Тести для консольної програми лабораторної роботи №1.
@@ -136,5 +138,27 @@ void doesNotCreateReportWhenNoValidRecordsExist() throws Exception {
     });
 
     assertFalse(Files.exists(output));
+}
+@Test
+void printsVersion() {
+    PrintStream originalOut = System.out;
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+    try {
+        System.setOut(
+                new PrintStream(
+                        output,
+                        true,
+                        StandardCharsets.UTF_8));
+
+        Main.main(new String[]{"--version"});
+    } finally {
+        System.setOut(originalOut);
+    }
+
+    assertEquals(
+            "Комунальні показники 1.0.0"
+                    + System.lineSeparator(),
+            output.toString(StandardCharsets.UTF_8));
 }
 }
