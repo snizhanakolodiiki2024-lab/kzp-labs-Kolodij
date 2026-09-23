@@ -158,9 +158,9 @@ void printsVersion() {
     }
 
     assertEquals(
-            "Комунальні показники 1.0.0"
-                    + System.lineSeparator(),
-            output.toString(StandardCharsets.UTF_8));
+        "Version 1.0.0"
+                + System.lineSeparator(),
+        output.toString(StandardCharsets.UTF_8));
 }
 @Test
 void ignoresRecordWithEmptyMeter() throws IOException {

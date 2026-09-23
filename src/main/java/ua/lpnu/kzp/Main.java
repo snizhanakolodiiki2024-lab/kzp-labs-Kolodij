@@ -114,13 +114,13 @@ public final class Main {
 
     if (buildNumber == null || buildNumber.isBlank()) {
         System.out.printf(
-                "Комунальні показники %s%n",
+                "Version %s%n",
                 VERSION);
         return;
     }
 
     System.out.printf(
-            "Комунальні показники %s (build %s)%n",
+            "Version %s (build %s)%n",
             VERSION,
             buildNumber);
 }
