@@ -110,10 +110,20 @@ public final class Main {
     * Виводить версію програми.
     */
     private static void printVersion() {
-    System.out.printf(
-            "Комунальні показники %s%n",
-            VERSION);
+    String buildNumber = System.getenv("CI_BUILD_NUMBER");
+
+    if (buildNumber == null || buildNumber.isBlank()) {
+        System.out.printf(
+                "Комунальні показники %s%n",
+                VERSION);
+        return;
     }
+
+    System.out.printf(
+            "Комунальні показники %s (build %s)%n",
+            VERSION,
+            buildNumber);
+}
 
     /**
      * Читає всі рядки вхідного файла у кодуванні UTF-8.
