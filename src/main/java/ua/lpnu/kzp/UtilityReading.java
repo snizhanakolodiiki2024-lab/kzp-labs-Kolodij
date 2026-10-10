@@ -23,40 +23,40 @@ public final class UtilityReading {
      */
     public UtilityReading(String meter, String date, double value, double tariff) {
         if (meter == null || meter.isBlank()) {
-    throw new IllegalArgumentException(
-            "поле meter не може бути порожнім"
-    );
-}
+            throw new IllegalArgumentException(
+                    "поле meter не може бути порожнім"
+            );
+        }
 
-if (date == null || date.isBlank()) {
-    throw new IllegalArgumentException(
-            "поле date не може бути порожнім"
-    );
-}
+        if (date == null || date.isBlank()) {
+            throw new IllegalArgumentException(
+                    "поле date не може бути порожнім"
+            );
+        }
 
-if (!Double.isFinite(value)) {
-    throw new IllegalArgumentException(
-            "value має бути скінченним числом"
-    );
-}
+        if (!Double.isFinite(value)) {
+            throw new IllegalArgumentException(
+                    "value має бути скінченним числом"
+            );
+        }
 
-if (value < 0) {
-    throw new IllegalArgumentException(
-            "value не може бути від'ємним"
-    );
-}
+        if (value < 0) {
+            throw new IllegalArgumentException(
+                    "value не може бути від'ємним"
+            );
+        }
 
-if (!Double.isFinite(tariff)) {
-    throw new IllegalArgumentException(
-            "tariff має бути скінченним числом"
-    );
-}
+        if (!Double.isFinite(tariff)) {
+            throw new IllegalArgumentException(
+                    "tariff має бути скінченним числом"
+            );
+        }
 
-if (tariff < 0) {
-    throw new IllegalArgumentException(
-            "tariff не може бути від'ємним"
-    );
-}
+        if (tariff < 0) {
+            throw new IllegalArgumentException(
+                    "tariff не може бути від'ємним"
+            );
+        }
 
         this.meter = meter;
         this.date = date;
@@ -65,7 +65,7 @@ if (tariff < 0) {
     }
 
     /**
-     * Returns the meter name.
+     * Returns meter.
      *
      * @return meter name
      */
@@ -74,7 +74,7 @@ if (tariff < 0) {
     }
 
     /**
-     * Returns the reading date.
+     * Returns date.
      *
      * @return reading date
      */
@@ -83,7 +83,7 @@ if (tariff < 0) {
     }
 
     /**
-     * Returns the consumed value.
+     * Returns value.
      *
      * @return consumed value
      */
@@ -92,9 +92,9 @@ if (tariff < 0) {
     }
 
     /**
-     * Returns the tariff.
+     * Returns tariff.
      *
-     * @return tariff
+     * @return tariff for one unit
      */
     public double getTariff() {
         return tariff;
@@ -108,45 +108,124 @@ if (tariff < 0) {
      * @throws IllegalArgumentException if the line is invalid
      */
     public static UtilityReading fromCsv(String line) {
-    if (line == null) {
-        throw new IllegalArgumentException(
-                "рядок не може бути null"
-        );
+        if (line == null) {
+            throw new IllegalArgumentException(
+                    "рядок не може бути null"
+            );
+        }
+
+        if (line.isBlank()) {
+            throw new IllegalArgumentException(
+                    "порожній рядок"
+            );
+        }
+
+        String[] parts = line.split(";", -1);
+
+        if (parts.length != 4) {
+            throw new IllegalArgumentException(
+                    "очікується 4 поля"
+            );
+        }
+
+        try {
+            String meter = parts[0].trim();
+            String date = parts[1].trim();
+            double value = Double.parseDouble(parts[2].trim());
+            double tariff = Double.parseDouble(parts[3].trim());
+
+            return new UtilityReading(
+                    meter,
+                    date,
+                    value,
+                    tariff
+            );
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException(
+                    "value і tariff мають бути числами",
+                    exception
+            );
+        }
     }
 
-    if (line.isBlank()) {
-        throw new IllegalArgumentException(
-                "порожній рядок"
-        );
+    /**
+     * Creates a new builder for UtilityReading.
+     *
+     * @return new builder
+     */
+    public static Builder builder() {
+        return new Builder();
     }
 
-    String[] parts = line.split(";", -1);
+    /**
+     * Builder for creating UtilityReading objects.
+     */
+    public static final class Builder {
 
-    if (parts.length != 4) {
-        throw new IllegalArgumentException(
-                "очікується 4 поля"
-        );
+        private String meter;
+        private String date;
+        private double value;
+        private double tariff;
+
+        /**
+         * Sets meter.
+         *
+         * @param meter meter name
+         * @return this builder
+         */
+        public Builder meter(String meter) {
+            this.meter = meter;
+            return this;
+        }
+
+        /**
+         * Sets date.
+         *
+         * @param date reading date
+         * @return this builder
+         */
+        public Builder date(String date) {
+            this.date = date;
+            return this;
+        }
+
+        /**
+         * Sets value.
+         *
+         * @param value consumed value
+         * @return this builder
+         */
+        public Builder value(double value) {
+            this.value = value;
+            return this;
+        }
+
+        /**
+         * Sets tariff.
+         *
+         * @param tariff tariff for one unit
+         * @return this builder
+         */
+        public Builder tariff(double tariff) {
+            this.tariff = tariff;
+            return this;
+        }
+
+        /**
+         * Creates UtilityReading using the main constructor.
+         *
+         * @return created utility reading
+         * @throws IllegalArgumentException if any value is invalid
+         */
+        public UtilityReading build() {
+            return new UtilityReading(
+                    meter,
+                    date,
+                    value,
+                    tariff
+            );
+        }
     }
-
-    try {
-        String meter = parts[0].trim();
-        String date = parts[1].trim();
-        double value = Double.parseDouble(parts[2].trim());
-        double tariff = Double.parseDouble(parts[3].trim());
-
-        return new UtilityReading(
-                meter,
-                date,
-                value,
-                tariff
-        );
-    } catch (NumberFormatException exception) {
-        throw new IllegalArgumentException(
-                "value і tariff мають бути числами",
-                exception
-        );
-    }
-}
 
     /**
      * Returns a string representation of this utility reading.

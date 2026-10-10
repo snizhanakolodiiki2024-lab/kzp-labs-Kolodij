@@ -374,7 +374,8 @@ Record використовується під час обчислення сп�
 | Дані | окремі значення | `List<UtilityReading>` |
 | Допоміжні значення | окремі змінні | `ConsumptionCost` |
 | Перевірка `NaN` / Infinity | неповна | `Double.isFinite()` |
-| Кількість тестів | 7 | 35 |
+| Створення об'єкта | конструктор | конструктор + `Builder` |
+| Кількість тестів | 7 | 38 |
 | Версія | `1.0.0` | `2.0.0` |
 | JAR | `lab01-1.0.0.jar` | `lab01-2.0.0.jar` |
 
@@ -402,7 +403,7 @@ Record використовується під час обчислення сп�
 Результат:
 
 ```text
-Tests run: 35, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 38, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
@@ -416,7 +417,9 @@ BUILD SUCCESS
 - `-Infinity`;
 - `fromCsv()`;
 - `ConsumptionCost`;
-- коди завершення програми.
+- коди завершення програми;
+- створення об'єкта через `Builder`;
+- валідація під час використання `Builder`.
 
 ## Maven і SpotBugs
 
@@ -434,6 +437,39 @@ Error size is 0
 No errors/warnings found
 BUILD SUCCESS
 ```
+
+## Незмінність і Builder ⭐
+
+`UtilityReading` є повністю незмінним:
+
+- клас `final`;
+- поля `private final`;
+- setter-и відсутні.
+
+Для зручного створення об'єктів додано:
+
+```java
+UtilityReading.Builder
+```
+
+Приклад:
+
+```java
+UtilityReading reading = UtilityReading.builder()
+        .meter("Водомір-1")
+        .date("2026-09-01")
+        .value(10.0)
+        .tariff(2.5)
+        .build();
+```
+
+Метод `build()` викликає основний конструктор `UtilityReading`, тому Builder не обходить валідацію.
+
+Для Builder додано 3 тести:
+
+- коректне створення;
+- відхилення некоректного значення;
+- відхилення відсутніх обов'язкових полів.
 
 ## JAR
 
@@ -474,12 +510,12 @@ CI запускається на трьох ОС:
 У workflow:
 
 - запускається Maven `verify`;
-- виконуються всі 35 тестів;
+- виконуються автоматизовані тести;
 - запускається SpotBugs;
 - перевіряється версія;
 - JAR публікується як artifact.
 
-Успішний workflow:
+Успішний workflow Level 3:
 
 ```text
 https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij/actions/runs/38091105340
@@ -495,6 +531,7 @@ https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij/actions/runs/38091
 | `#7` | `ConsumptionCost` та тести |
 | `#8` | Maven, SpotBugs, JAR |
 | `#9` | CI, artifacts, версія |
+| `#10` | Immutable `UtilityReading` та Builder ⭐ |
 
 ## Структура Lab 2
 
@@ -519,7 +556,10 @@ src/
 - реалізовано `ConsumptionCost`;
 - валідацію перенесено до предметної моделі;
 - додано перевірку скінченних чисел;
-- кількість тестів збільшено до 35;
+- `UtilityReading` залишено повністю незмінним;
+- реалізовано `UtilityReading.Builder`;
+- Builder не обходить валідацію конструктора;
+- кількість тестів збільшено до 38;
 - SpotBugs не знаходить дефектів;
 - CI проходить на Ubuntu, Windows і macOS;
 - версію оновлено до `2.0.0`;

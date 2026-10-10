@@ -235,4 +235,42 @@ class UtilityReadingTest {
                 )
         );
     }
+    @Test
+void builderCreatesValidReading() {
+    UtilityReading reading = UtilityReading.builder()
+            .meter("Водомір-1")
+            .date("2026-09-01")
+            .value(10.0)
+            .tariff(2.5)
+            .build();
+
+    assertEquals("Водомір-1", reading.getMeter());
+    assertEquals("2026-09-01", reading.getDate());
+    assertEquals(10.0, reading.getValue(), 0.0001);
+    assertEquals(2.5, reading.getTariff(), 0.0001);
+}
+
+@Test
+void builderDoesNotBypassValidation() {
+    assertThrows(
+            IllegalArgumentException.class,
+            () -> UtilityReading.builder()
+                    .meter("Водомір-1")
+                    .date("2026-09-01")
+                    .value(-1.0)
+                    .tariff(2.5)
+                    .build()
+    );
+}
+
+@Test
+void builderRejectsMissingRequiredFields() {
+    assertThrows(
+            IllegalArgumentException.class,
+            () -> UtilityReading.builder()
+                    .value(10.0)
+                    .tariff(2.5)
+                    .build()
+    );
+}
 }
