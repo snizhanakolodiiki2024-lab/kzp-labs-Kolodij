@@ -158,7 +158,7 @@ void printsVersion() {
     }
 
     assertEquals(
-        "Version 1.0.0"
+        "Version 2.0.0"
                 + System.lineSeparator(),
         output.toString(StandardCharsets.UTF_8));
 }
@@ -235,21 +235,55 @@ void printsErrorForUnknownArgument() {
     PrintStream originalOut = System.out;
     ByteArrayOutputStream output = new ByteArrayOutputStream();
 
+    int exitCode;
+
     try {
         System.setOut(
                 new PrintStream(
                         output,
                         true,
-                        StandardCharsets.UTF_8));
+                        StandardCharsets.UTF_8
+                )
+        );
 
-        Main.main(new String[]{"--unknown"});
+        exitCode = Main.run(new String[]{"--unknown"});
     } finally {
         System.setOut(originalOut);
     }
 
+    assertEquals(1, exitCode);
+
     assertEquals(
             "Помилка: невідомий аргумент --unknown"
                     + System.lineSeparator(),
-            output.toString(StandardCharsets.UTF_8));
+            output.toString(StandardCharsets.UTF_8)
+    );
+}
+
+@Test
+void returnsZeroForVersion() {
+    int exitCode = Main.run(new String[]{"--version"});
+
+    assertEquals(0, exitCode);
+}
+
+@Test
+void returnsArgumentErrorWhenInputPathIsMissing() {
+    int exitCode = Main.run(new String[]{"--input"});
+
+    assertEquals(1, exitCode);
+}
+
+@Test
+void returnsIoErrorWhenInputFileDoesNotExist() {
+    Path input = tempDir.resolve("missing.csv");
+    Path output = tempDir.resolve("report.txt");
+
+    int exitCode = Main.run(new String[]{
+            "--input", input.toString(),
+            "--output", output.toString()
+    });
+
+    assertEquals(2, exitCode);
 }
 }

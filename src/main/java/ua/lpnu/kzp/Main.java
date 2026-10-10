@@ -4,15 +4,19 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 /**
- * Головний клас консольної програми лабораторної роботи №1.
+ * Головний клас консольної програми лабораторної роботи №2.
  */
 public final class Main {
 
-    private static final String VERSION = "1.0.0";
+    private static final String VERSION = "2.0.0";
+    private static final int EXIT_SUCCESS = 0;
+    private static final int EXIT_ARGUMENT_ERROR = 1;
+    private static final int EXIT_IO_ERROR = 2;
 
     /**
      * Забороняє створення екземплярів службового класу.
@@ -26,25 +30,40 @@ public final class Main {
      * @param args аргументи командного рядка
      */
     public static void main(String[] args) {
+        int exitCode = run(args);
+
+        if (exitCode != EXIT_SUCCESS) {
+            System.exit(exitCode);
+        }
+    }
+
+    /**
+     * Виконує основну логіку програми та повертає код завершення.
+     *
+     * @param args аргументи командного рядка
+     * @return код завершення програми
+     */
+    static int run(String[] args) {
         Path input = Path.of("data", "input.csv");
         Path output = Path.of("out", "report.txt");
 
         for (int i = 0; i < args.length; i++) {
             if ("--help".equals(args[i])) {
                 printHelp();
-                return;
+                return EXIT_SUCCESS;
             }
 
             if ("--version".equals(args[i])) {
                 printVersion();
-                 return;
+                return EXIT_SUCCESS;
             }
 
             if ("--input".equals(args[i])) {
                 if (i + 1 >= args.length) {
                     System.out.printf(
-                            "Помилка: після --input потрібно вказати шлях до файла%n");
-                    return;
+                            "Помилка: після --input потрібно вказати шлях до файла%n"
+                    );
+                    return EXIT_ARGUMENT_ERROR;
                 }
 
                 input = Path.of(args[++i]);
@@ -54,8 +73,9 @@ public final class Main {
             if ("--output".equals(args[i])) {
                 if (i + 1 >= args.length) {
                     System.out.printf(
-                            "Помилка: після --output потрібно вказати шлях до файла%n");
-                    return;
+                            "Помилка: після --output потрібно вказати шлях до файла%n"
+                    );
+                    return EXIT_ARGUMENT_ERROR;
                 }
 
                 output = Path.of(args[++i]);
@@ -64,8 +84,9 @@ public final class Main {
 
             System.out.printf(
                     "Помилка: невідомий аргумент %s%n",
-                    args[i]);
-            return;
+                    args[i]
+            );
+            return EXIT_ARGUMENT_ERROR;
         }
 
         try {
@@ -73,12 +94,13 @@ public final class Main {
 
             System.out.printf(
                     "Прочитано рядків: %d%n",
-                    lines.size());
+                    lines.size()
+            );
 
             String report = processLines(lines);
 
             if (report == null) {
-                return;
+                return EXIT_SUCCESS;
             }
 
             System.out.printf("%n%s", report);
@@ -87,12 +109,16 @@ public final class Main {
 
             System.out.printf(
                     "Звіт записано у файл: %s%n",
-                    output);
+                    output
+            );
 
+            return EXIT_SUCCESS;
         } catch (IOException exception) {
             System.out.printf(
                     "Помилка роботи з файлом: %s%n",
-                    exception.getMessage());
+                    exception.getMessage()
+            );
+            return EXIT_IO_ERROR;
         }
     }
 
@@ -101,29 +127,30 @@ public final class Main {
      */
     private static void printHelp() {
     System.out.printf(
-            "Використання: java -jar <файл.jar> "
-                    + "[--help] [--version] "
-                    + "[--input <файл>] [--output <файл>]%n");
-    }
+            "Використання: java -jar <файл.jar> [--help] [--version] [--input <файл>] [--output <файл>]%n"
+    );
+}
 
     /**
-    * Виводить версію програми.
-    */
+     * Виводить версію програми.
+     */
     private static void printVersion() {
-    String buildNumber = System.getenv("CI_BUILD_NUMBER");
+        String buildNumber = System.getenv("CI_BUILD_NUMBER");
 
-    if (buildNumber == null || buildNumber.isBlank()) {
+        if (buildNumber == null || buildNumber.isBlank()) {
+            System.out.printf(
+                    "Version %s%n",
+                    VERSION
+            );
+            return;
+        }
+
         System.out.printf(
-                "Version %s%n",
-                VERSION);
-        return;
+                "Version %s (build %s)%n",
+                VERSION,
+                buildNumber
+        );
     }
-
-    System.out.printf(
-            "Version %s (build %s)%n",
-            VERSION,
-            buildNumber);
-}
 
     /**
      * Читає всі рядки вхідного файла у кодуванні UTF-8.
@@ -134,22 +161,21 @@ public final class Main {
      */
     private static List<String> readInput(Path input)
             throws IOException {
+
         return Files.readAllLines(
                 input,
-                StandardCharsets.UTF_8);
+                StandardCharsets.UTF_8
+        );
     }
 
     /**
-     * Перевіряє записи та обчислює показники варіанта №9.
+     * Створює об'єкти UtilityReading та обчислює показники варіанта №9.
      *
      * @param lines рядки вхідного файла
      * @return сформований звіт або null, якщо коректних записів немає
      */
     private static String processLines(List<String> lines) {
-        int validCount = 0;
-        double totalConsumption = 0.0;
-        double totalCost = 0.0;
-        double maxConsumption = 0.0;
+        List<UtilityReading> readings = new ArrayList<>();
 
         for (int lineNumber = 1;
                 lineNumber <= lines.size();
@@ -157,95 +183,54 @@ public final class Main {
 
             String line = lines.get(lineNumber - 1);
 
-            if (line.isBlank()) {
-                System.out.printf(
-                        "Рядок %d пропущено: порожній рядок%n",
-                        lineNumber);
-                continue;
-            }
-
-            String[] fields = line.split(";", -1);
-
-            if (fields.length != 4) {
-                System.out.printf(
-                        "Рядок %d пропущено: очікується 4 поля%n",
-                        lineNumber);
-                continue;
-            }
-
-            String meter = fields[0].trim();
-            String date = fields[1].trim();
-
-            if (meter.isEmpty()) {
-                System.out.printf(
-                        "Рядок %d пропущено: "
-                                + "поле meter не може бути порожнім%n",
-                        lineNumber);
-                continue;
-            }
-
-            if (date.isEmpty()) {
-                System.out.printf(
-                        "Рядок %d пропущено: "
-                                + "поле date не може бути порожнім%n",
-                        lineNumber);
-                continue;
-            }
-
-            double value;
-            double tariff;
-
             try {
-                value = Double.parseDouble(fields[2].trim());
-                tariff = Double.parseDouble(fields[3].trim());
-            } catch (NumberFormatException exception) {
+                UtilityReading reading = UtilityReading.fromCsv(line);
+                readings.add(reading);
+
                 System.out.printf(
-                        "Рядок %d пропущено: "
-                                + "value і tariff мають бути числами%n",
-                        lineNumber);
-                continue;
-            }
-
-            if (value < 0) {
+                        "Рядок %d: запис коректний%n",
+                        lineNumber
+                );
+            } catch (IllegalArgumentException exception) {
                 System.out.printf(
-                        "Рядок %d пропущено: "
-                                + "value не може бути від'ємним%n",
-                        lineNumber);
-                continue;
+                        "Рядок %d пропущено: %s%n",
+                        lineNumber,
+                        exception.getMessage()
+                );
             }
-
-            if (tariff < 0) {
-                System.out.printf(
-                        "Рядок %d пропущено: "
-                                + "tariff не може бути від'ємним%n",
-                        lineNumber);
-                continue;
-            }
-
-            validCount++;
-            totalConsumption += value;
-            totalCost += value * tariff;
-
-            if (value > maxConsumption) {
-                maxConsumption = value;
-            }
-
-            System.out.printf(
-                    "Рядок %d: запис коректний%n",
-                    lineNumber);
         }
 
-        if (validCount == 0) {
+        if (readings.isEmpty()) {
             System.out.printf(
-                    "Не знайдено жодного коректного запису%n");
+                    "Не знайдено жодного коректного запису%n"
+            );
             return null;
         }
 
+        double totalConsumption = 0.0;
+        double totalCost = 0.0;
+        double maxConsumption = 0.0;
+
+        for (UtilityReading reading : readings) {
+    ConsumptionCost consumptionCost = new ConsumptionCost(
+            reading.getValue(),
+            reading.getValue() * reading.getTariff()
+    );
+
+    totalConsumption += consumptionCost.consumption();
+    totalCost += consumptionCost.cost();
+    maxConsumption = Math.max(
+            maxConsumption,
+            consumptionCost.consumption()
+    );
+}
+
         return formatReport(
-                validCount,
+                readings.size(),
                 totalConsumption,
                 totalCost,
-                maxConsumption);
+                maxConsumption
+        );
     }
 
     /**
@@ -258,23 +243,20 @@ public final class Main {
      * @return текст звіту
      */
     private static String formatReport(
-            int validCount,
-            double totalConsumption,
-            double totalCost,
-            double maxConsumption) {
+        int validCount,
+        double totalConsumption,
+        double totalCost,
+        double maxConsumption) {
 
-        return String.format(
-                Locale.ROOT,
-                "Результати:%n"
-                        + "Кількість коректних записів: %d%n"
-                        + "Сумарне споживання: %.2f%n"
-                        + "Загальна вартість: %.2f%n"
-                        + "Найбільше споживання: %.2f%n",
-                validCount,
-                totalConsumption,
-                totalCost,
-                maxConsumption);
-    }
+    return String.format(
+            Locale.ROOT,
+            "Результати:%nКількість коректних записів: %d%nСумарне споживання: %.2f%nЗагальна вартість: %.2f%nНайбільше споживання: %.2f%n",
+            validCount,
+            totalConsumption,
+            totalCost,
+            maxConsumption
+    );
+}
 
     /**
      * Записує сформований звіт у файл у кодуванні UTF-8.
@@ -296,6 +278,7 @@ public final class Main {
         Files.writeString(
                 output,
                 report,
-                StandardCharsets.UTF_8);
+                StandardCharsets.UTF_8
+        );
     }
 }
