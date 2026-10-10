@@ -518,7 +518,7 @@ CI запускається на трьох ОС:
 Успішний workflow Level 3:
 
 ```text
-https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij/actions/runs/38091105340
+https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij/actions/runs/38093321839
 ```
 
 Опубліковано 3 artifacts.

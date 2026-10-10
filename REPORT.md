@@ -480,6 +480,8 @@ UtilityReading.fromCsv(String line)
 meter;date;value;tariff
 ```
 
+Фабричний метод перевіряє структуру CSV та числові поля, а предметна валідація залишається в конструкторі.
+
 Допоміжне незмінне значення:
 
 ```java
@@ -487,6 +489,8 @@ record ConsumptionCost(double consumption, double cost)
 ```
 
 `ConsumptionCost` використовується під час обчислення споживання та вартості.
+
+Метод `toString()` перевизначено з використанням `Locale.ROOT`, тому формат дробових чисел не залежить від локалі операційної системи.
 
 ## 4. Порівняння Lab 1 і Lab 2
 
@@ -522,8 +526,11 @@ record ConsumptionCost(double consumption, double cost)
 - `Infinity`;
 - `-Infinity`;
 - `fromCsv()`;
-- неправильний формат CSV;
+- неправильна кількість CSV-полів;
+- неправильний числовий формат;
+- порушення інваріантів;
 - `ConsumptionCost`;
+- рівність і компоненти `record`;
 - коди завершення програми;
 - створення через Builder;
 - неможливість обходу валідації через Builder;
@@ -555,6 +562,12 @@ No errors/warnings found
 BUILD SUCCESS
 ```
 
+Пакування:
+
+```powershell
+.\mvnw.cmd package
+```
+
 Поточний JAR:
 
 ```text
@@ -573,6 +586,14 @@ java -jar target\lab01-2.0.0.jar --version
 Version 2.0.0
 ```
 
+Запуск JAR:
+
+```powershell
+java -jar target\lab01-2.0.0.jar --input data\input.csv --output out\report-lab2.txt
+```
+
+JAR успішно запускається, а підсумкові показники збігаються з лабораторною роботою №1.
+
 ## 7. GitHub Actions
 
 CI запускається на:
@@ -583,31 +604,31 @@ CI запускається на:
 | Windows | Success |
 | macOS | Success |
 
-Успішний workflow Level 3:
+Актуальний зелений workflow:
 
 ```text
-https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij/actions/runs/38091105340
+https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij/actions/runs/38093321839
 ```
 
 У цьому запуску:
 
 - виконано Maven `verify`;
-- виконано 35 тестів;
+- виконано 38 тестів;
 - запущено SpotBugs;
 - перевірено версію;
 - опубліковано 3 JAR artifacts.
 
-Після додавання Builder буде виконано новий CI вже з 38 тестами.
+JAR artifacts доступні на сторінці цього workflow.
 
 ## 8. GitHub Issues і Pull Request
 
-| Issue | Виконана робота |
-| --- | --- |
-| `#6` | `UtilityReading`, `fromCsv()`, перенесення валідації |
-| `#7` | `ConsumptionCost` та автоматизовані тести |
-| `#8` | Maven, SpotBugs, JAR |
-| `#9` | CI, artifacts, версія `2.0.0` |
-| `#10` | Immutable `UtilityReading` та Builder ⭐ |
+| Issue | Виконана робота | Перевірка |
+| --- | --- | --- |
+| `#6` | `UtilityReading`, `fromCsv()`, перенесення валідації | старі 7 тестів, контрольний звіт |
+| `#7` | `ConsumptionCost` та автоматизовані тести | 35 тестів без помилок |
+| `#8` | Maven, SpotBugs, JAR | `BUILD SUCCESS`, SpotBugs: 0 дефектів |
+| `#9` | CI, artifacts, версія `2.0.0` | Ubuntu, Windows, macOS — Success |
+| `#10` | Immutable `UtilityReading` та Builder ⭐ | 38 тестів, Builder validation |
 
 Гілка:
 
@@ -640,18 +661,51 @@ Closes #10
 
 ## 10. Академічна доброчесність
 
-Під час виконання роботи використовувався ChatGPT як допоміжний інструмент для:
+Під час виконання роботи використовувався ChatGPT як допоміжний інструмент.
+
+Використовувалися ролі:
+
+- Менеджера — планування Issues і рівнів виконання;
+- Розробника — реалізація предметної моделі;
+- Валідатора — перевірка інваріантів і тестів;
+- DevOps — Maven, SpotBugs і GitHub Actions;
+- Документатора — README, REPORT і javadoc;
+- Рецензента — перевірка сумісності поведінки до і після рефакторингу.
+
+Основні запити до ШІ стосувалися:
 
 - аналізу методичних вимог;
-- підготовки варіантів коду;
+- структури `UtilityReading`;
+- реалізації `ConsumptionCost`;
 - формування тестів;
 - аналізу Maven та SpotBugs;
 - налаштування CI;
 - оформлення README і REPORT.
 
-Усі зміни перевірялися власноруч через тести, Maven `verify`, запуск JAR та GitHub Actions.
+Прийняті рекомендації:
 
-Код і предметна модель адаптовані до варіанта №9. Приклади інших варіантів не копіювалися як готове рішення.
+- використання `Double.isFinite()`;
+- централізація предметної валідації в конструкторі;
+- використання `ConsumptionCost`;
+- перевірка ненульових exit codes;
+- тести `NaN`, `Infinity` та `-Infinity`;
+- Builder через основний конструктор;
+- CI на трьох ОС.
+
+Відхилені або скориговані пропозиції:
+
+- не копіювали `WeatherReading`, `TemperatureHumidity` та чужий `artifactId`;
+- початкову пропозицію версії `1.1.0` було переглянуто;
+- приклади інших варіантів використовувалися лише як орієнтир оформлення.
+
+Під час роботи виправлено:
+
+- приймання `NaN` та нескінченних чисел;
+- некоректні exit codes для помилкових сценаріїв;
+- застарілі версії GitHub Actions;
+- перевірку Builder без обходу конструктора.
+
+Усі зміни перевірялися власноруч через тести, Maven `verify`, запуск JAR та GitHub Actions.
 
 ## 11. Відповіді на контрольні питання
 
@@ -744,6 +798,7 @@ UtilityReading reading = UtilityReading.builder()
 - валідацію перенесено до предметної моделі;
 - додано `fromCsv()`;
 - створено `ConsumptionCost`;
+- додано `toString()` з `Locale.ROOT`;
 - виправлено обробку `NaN` та нескінченних значень;
 - `UtilityReading` залишено повністю незмінним;
 - реалізовано `UtilityReading.Builder`;
@@ -754,6 +809,8 @@ UtilityReading reading = UtilityReading.builder()
 - CI успішно працює на Ubuntu, Windows і macOS;
 - JAR публікується як artifact;
 - результати Lab 1 і Lab 2 залишилися однаковими.
+
+Отримана об'єктна модель є основою для лабораторної роботи №3.
 
 Після завершення Pull Request буде створено Git-тег:
 
