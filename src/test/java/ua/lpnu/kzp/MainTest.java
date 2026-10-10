@@ -235,21 +235,28 @@ void printsErrorForUnknownArgument() {
     PrintStream originalOut = System.out;
     ByteArrayOutputStream output = new ByteArrayOutputStream();
 
+    int exitCode;
+
     try {
         System.setOut(
                 new PrintStream(
                         output,
                         true,
-                        StandardCharsets.UTF_8));
+                        StandardCharsets.UTF_8
+                )
+        );
 
-        Main.main(new String[]{"--unknown"});
+        exitCode = Main.run(new String[]{"--unknown"});
     } finally {
         System.setOut(originalOut);
     }
 
+    assertEquals(1, exitCode);
+
     assertEquals(
             "Помилка: невідомий аргумент --unknown"
                     + System.lineSeparator(),
-            output.toString(StandardCharsets.UTF_8));
+            output.toString(StandardCharsets.UTF_8)
+    );
 }
 }
