@@ -305,166 +305,128 @@ kzp-labs-Kolodij/
 v1.0.0
 ```
 
-# Лабораторна робота №2 — Класи, record і інкапсуляція
+# Лабораторна робота №2
 
-## Варіант
+Поточна версія: `2.0.0`.
 
-Варіант №9 — **«Комунальні показники»**.
+**Варіант:** №9
+**Предметна область:** комунальні показники
 
-Формат вхідного запису залишається без змін:
+У лабораторній роботі №2 виконано перехід від рядкового представлення даних до об'єктної моделі.
 
-```text
-meter;date;value;tariff
+## Основні класи
+
+### `UtilityReading`
+
+Основна сутність:
+
+```java
+UtilityReading
 ```
 
-Основна сутність предметної області — клас `UtilityReading`.
+Поля:
 
-## Level 1 — базовий
+```java
+private final String meter;
+private final String date;
+private final double value;
+private final double tariff;
+```
 
-У лабораторній роботі №2 виконано перехід від прямого опрацювання CSV-полів у `Main` до об'єктної моделі.
+Особливості:
 
-Створено клас `UtilityReading` з полями:
+- клас `final`;
+- поля `private final`;
+- setter-и відсутні;
+- валідація виконується в конструкторі;
+- `NaN`, `Infinity` і `-Infinity` не допускаються;
+- для перевірки чисел використовується `Double.isFinite()`.
 
-- `meter`;
-- `date`;
-- `value`;
-- `tariff`.
-
-Усі поля оголошені як `private final`.
-Сеттери не використовуються.
-
-## Валідація UtilityReading
-
-Конструктор перевіряє:
-
-- `meter` не є `null` або порожнім;
-- `date` не є `null` або порожньою;
-- `value` не є від'ємним;
-- `tariff` не є від'ємним;
-- `value` є скінченним числом;
-- `tariff` є скінченним числом.
-
-Для перевірки числових значень використовується `Double.isFinite()`, тому `NaN`, `Infinity` і `-Infinity` не допускаються.
-
-## Фабричний метод fromCsv
-
-У класі `UtilityReading` реалізовано статичний метод:
+Створення з CSV:
 
 ```java
 UtilityReading.fromCsv(String line)
 ```
 
-Метод:
-
-- перевіряє структуру CSV-рядка;
-- очікує 4 поля;
-- перетворює `value` і `tariff` у числові значення;
-- створює об'єкт `UtilityReading`.
-
-Перевірка інваріантів виконується конструктором і не дублюється в `Main`.
-
-## Рефакторинг Main
-
-`Main` тепер працює зі списком об'єктів `UtilityReading`.
-
-Некоректний запис не додається до списку і не впливає на статистику.
-Повідомлення про помилку зберігає номер відповідного рядка.
-
-Також виправлено зауваження після ЛР1:
-
-- додано перевірку скінченності `value` і `tariff`;
-- усунуто зайву конкатенацію рядків;
-- для помилкового завершення передбачено ненульовий код завершення;
-- успішне завершення використовує код `0`.
-
-## Сумісність з лабораторною роботою №1
-
-Формат вхідних даних і підсумкового звіту не змінено.
-
-Для контрольного файла результат після рефакторингу:
+Формат CSV:
 
 ```text
-Результати:
+meter;date;value;tariff
+```
+
+### `ConsumptionCost`
+
+Допоміжне незмінне значення:
+
+```java
+record ConsumptionCost(double consumption, double cost)
+```
+
+Record використовується під час обчислення споживання та вартості.
+
+## Порівняння Lab 1 і Lab 2
+
+| Характеристика | Lab 1 | Lab 2 |
+| --- | --- | --- |
+| Представлення запису | рядок та окремі змінні | `UtilityReading` |
+| Розбір CSV | у `Main` | `UtilityReading.fromCsv()` |
+| Валідація | у циклі обробки | у конструкторі |
+| Дані | окремі значення | `List<UtilityReading>` |
+| Допоміжні значення | окремі змінні | `ConsumptionCost` |
+| Перевірка `NaN` / Infinity | неповна | `Double.isFinite()` |
+| Кількість тестів | 7 | 35 |
+| Версія | `1.0.0` | `2.0.0` |
+| JAR | `lab01-1.0.0.jar` | `lab01-2.0.0.jar` |
+
+## Результати
+
+Для контрольного набору даних:
+
+```text
 Кількість коректних записів: 3
 Сумарне споживання: 186.25
 Загальна вартість: 1198.32
 Найбільше споживання: 125.50
 ```
 
-Старі 7 тестів лабораторної роботи №1 продовжують проходити:
+Результати Lab 1 і Lab 2 однакові, тому зовнішня поведінка програми після рефакторингу збережена.
 
-```text
-Tests run: 7, Failures: 0, Errors: 0, Skipped: 0
-BUILD SUCCESS
+## Тестування
+
+Запуск:
+
+```powershell
+.\mvnw.cmd test
 ```
 
-## Структура після Level 1
-
-```text
-src/main/java/ua/lpnu/kzp/
-├── Main.java
-└── UtilityReading.java
-
-src/test/java/ua/lpnu/kzp/
-└── MainTest.java
-```
-## Level 2 — інженерний
-
-На Level 2 додано допоміжний record `ConsumptionCost`.
-
-Record зберігає два незмінні значення:
-
-- `consumption` — значення споживання;
-- `cost` — вартість споживання.
-
-`ConsumptionCost` використовується під час обчислення підсумкових показників у `Main`.
-
-Для record перевіряються:
-
-- від'ємні значення;
-- `NaN`;
-- `Infinity`;
-- нульові значення.
-
-## Нові автоматизовані тести
-
-До наявних тестів ЛР1 додано тести для `UtilityReading` і `ConsumptionCost`.
-
-Перевіряються:
-
-- коректне створення `UtilityReading`;
-- `null` і порожні `meter` та `date`;
-- від'ємні `value` і `tariff`;
-- `value = 0` і `tariff = 0`;
-- `NaN`;
-- `Infinity`;
-- `-Infinity`;
-- коректний `fromCsv()`;
-- неправильна кількість CSV-полів;
-- неправильний числовий формат;
-- порушення інваріантів;
-- доступ до компонентів `ConsumptionCost`;
-- значеннєва рівність record;
-- коди завершення програми.
-
-Після додавання нових тестів результат:
+Результат:
 
 ```text
 Tests run: 35, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
-Старі тести лабораторної роботи №1 продовжують проходити разом із новими тестами.
+Перевіряються:
 
-## Maven і статичний аналіз
+- коректні та граничні значення;
+- `null` і blank;
+- від'ємні значення;
+- `NaN`;
+- `Infinity`;
+- `-Infinity`;
+- `fromCsv()`;
+- `ConsumptionCost`;
+- коди завершення програми.
 
-Виконано повну перевірку:
+## Maven і SpotBugs
+
+Повна перевірка:
 
 ```powershell
-.\mvnw.cmd verify
+.\mvnw.cmd clean verify
 ```
 
-SpotBugs не виявив дефектів:
+Результат:
 
 ```text
 BugInstance size is 0
@@ -473,16 +435,98 @@ No errors/warnings found
 BUILD SUCCESS
 ```
 
-Виконуваний JAR успішно створюється командою:
+## JAR
 
-```powershell
-.\mvnw.cmd package
+Поточний JAR:
+
+```text
+target/lab01-2.0.0.jar
 ```
 
-та запускається командою:
+Перевірка версії:
 
 ```powershell
-java -jar target\lab01-1.0.0.jar --input data\input.csv --output out\report-lab2.txt
+java -jar target\lab01-2.0.0.jar --version
 ```
 
-Після Level 2 формат звіту та предметні показники залишилися сумісними з лабораторною роботою №1.
+Результат:
+
+```text
+Version 2.0.0
+```
+
+Запуск програми:
+
+```powershell
+java -jar target\lab01-2.0.0.jar --input data\input.csv --output out\report-lab2.txt
+```
+
+## GitHub Actions
+
+CI запускається на трьох ОС:
+
+| ОС | Результат |
+| --- | --- |
+| Ubuntu | Success |
+| Windows | Success |
+| macOS | Success |
+
+У workflow:
+
+- запускається Maven `verify`;
+- виконуються всі 35 тестів;
+- запускається SpotBugs;
+- перевіряється версія;
+- JAR публікується як artifact.
+
+Успішний workflow:
+
+```text
+https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij/actions/runs/38091105340
+```
+
+Опубліковано 3 artifacts.
+
+## GitHub Issues
+
+| Issue | Зміст |
+| --- | --- |
+| `#6` | `UtilityReading` та рефакторинг |
+| `#7` | `ConsumptionCost` та тести |
+| `#8` | Maven, SpotBugs, JAR |
+| `#9` | CI, artifacts, версія |
+
+## Структура Lab 2
+
+```text
+src/
+├── main/java/ua/lpnu/kzp/
+│   ├── Main.java
+│   ├── UtilityReading.java
+│   └── ConsumptionCost.java
+└── test/java/ua/lpnu/kzp/
+    ├── MainTest.java
+    ├── UtilityReadingTest.java
+    └── ConsumptionCostTest.java
+```
+
+## Підсумок
+
+У Lab 2:
+
+- створено `UtilityReading`;
+- додано `fromCsv()`;
+- реалізовано `ConsumptionCost`;
+- валідацію перенесено до предметної моделі;
+- додано перевірку скінченних чисел;
+- кількість тестів збільшено до 35;
+- SpotBugs не знаходить дефектів;
+- CI проходить на Ubuntu, Windows і macOS;
+- версію оновлено до `2.0.0`;
+- JAR публікується як artifact.
+
+Після завершення Pull Request буде створено Git-тег:
+
+```text
+v2.0.0
+```
