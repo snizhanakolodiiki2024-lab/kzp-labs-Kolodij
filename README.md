@@ -575,8 +575,14 @@ src/
 - версію оновлено до `2.0.0`;
 - JAR публікується як artifact.
 
-Після завершення Pull Request буде створено Git-тег:
+Git-тег фінальної версії:
 
 ```text
 v2.0.0
+```
+
+Посилання:
+
+```text
+https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij/tree/v2.0.0
 ```
