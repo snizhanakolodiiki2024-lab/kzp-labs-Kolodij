@@ -408,3 +408,81 @@ src/main/java/ua/lpnu/kzp/
 src/test/java/ua/lpnu/kzp/
 └── MainTest.java
 ```
+## Level 2 — інженерний
+
+На Level 2 додано допоміжний record `ConsumptionCost`.
+
+Record зберігає два незмінні значення:
+
+- `consumption` — значення споживання;
+- `cost` — вартість споживання.
+
+`ConsumptionCost` використовується під час обчислення підсумкових показників у `Main`.
+
+Для record перевіряються:
+
+- від'ємні значення;
+- `NaN`;
+- `Infinity`;
+- нульові значення.
+
+## Нові автоматизовані тести
+
+До наявних тестів ЛР1 додано тести для `UtilityReading` і `ConsumptionCost`.
+
+Перевіряються:
+
+- коректне створення `UtilityReading`;
+- `null` і порожні `meter` та `date`;
+- від'ємні `value` і `tariff`;
+- `value = 0` і `tariff = 0`;
+- `NaN`;
+- `Infinity`;
+- `-Infinity`;
+- коректний `fromCsv()`;
+- неправильна кількість CSV-полів;
+- неправильний числовий формат;
+- порушення інваріантів;
+- доступ до компонентів `ConsumptionCost`;
+- значеннєва рівність record;
+- коди завершення програми.
+
+Після додавання нових тестів результат:
+
+```text
+Tests run: 35, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+Старі тести лабораторної роботи №1 продовжують проходити разом із новими тестами.
+
+## Maven і статичний аналіз
+
+Виконано повну перевірку:
+
+```powershell
+.\mvnw.cmd verify
+```
+
+SpotBugs не виявив дефектів:
+
+```text
+BugInstance size is 0
+Error size is 0
+No errors/warnings found
+BUILD SUCCESS
+```
+
+Виконуваний JAR успішно створюється командою:
+
+```powershell
+.\mvnw.cmd package
+```
+
+та запускається командою:
+
+```powershell
+java -jar target\lab01-1.0.0.jar --input data\input.csv --output out\report-lab2.txt
+```
+
+Після Level 2 формат звіту та предметні показники залишилися сумісними з лабораторною роботою №1.
