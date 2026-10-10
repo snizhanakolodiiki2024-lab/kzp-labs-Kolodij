@@ -158,7 +158,7 @@ void printsVersion() {
     }
 
     assertEquals(
-        "Version 1.0.0"
+        "Version 2.0.0"
                 + System.lineSeparator(),
         output.toString(StandardCharsets.UTF_8));
 }
