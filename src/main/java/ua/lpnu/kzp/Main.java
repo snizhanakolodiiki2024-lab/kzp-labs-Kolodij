@@ -212,12 +212,18 @@ public final class Main {
         double maxConsumption = 0.0;
 
         for (UtilityReading reading : readings) {
-            double value = reading.getValue();
+    ConsumptionCost consumptionCost = new ConsumptionCost(
+            reading.getValue(),
+            reading.getValue() * reading.getTariff()
+    );
 
-            totalConsumption += value;
-            totalCost += value * reading.getTariff();
-            maxConsumption = Math.max(maxConsumption, value);
-        }
+    totalConsumption += consumptionCost.consumption();
+    totalCost += consumptionCost.cost();
+    maxConsumption = Math.max(
+            maxConsumption,
+            consumptionCost.consumption()
+    );
+}
 
         return formatReport(
                 readings.size(),

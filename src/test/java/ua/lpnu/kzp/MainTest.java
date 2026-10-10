@@ -259,4 +259,31 @@ void printsErrorForUnknownArgument() {
             output.toString(StandardCharsets.UTF_8)
     );
 }
+
+@Test
+void returnsZeroForVersion() {
+    int exitCode = Main.run(new String[]{"--version"});
+
+    assertEquals(0, exitCode);
+}
+
+@Test
+void returnsArgumentErrorWhenInputPathIsMissing() {
+    int exitCode = Main.run(new String[]{"--input"});
+
+    assertEquals(1, exitCode);
+}
+
+@Test
+void returnsIoErrorWhenInputFileDoesNotExist() {
+    Path input = tempDir.resolve("missing.csv");
+    Path output = tempDir.resolve("report.txt");
+
+    int exitCode = Main.run(new String[]{
+            "--input", input.toString(),
+            "--output", output.toString()
+    });
+
+    assertEquals(2, exitCode);
+}
 }
