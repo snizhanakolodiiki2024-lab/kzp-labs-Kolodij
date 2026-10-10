@@ -533,6 +533,16 @@ https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij/actions/runs/38093
 | `#9` | CI, artifacts, версія |
 | `#10` | Immutable `UtilityReading` та Builder ⭐ |
 
+## Pull Request
+
+Фінальний Pull Request:
+
+```text
+https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij/pull/11
+```
+
+CI на Pull Request успішно пройшов на Ubuntu, Windows і macOS.
+
 ## Структура Lab 2
 
 ```text

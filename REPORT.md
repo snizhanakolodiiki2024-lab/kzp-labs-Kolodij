@@ -636,6 +636,14 @@ JAR artifacts доступні на сторінці цього workflow.
 lab2
 ```
 
+Фінальний Pull Request:
+
+```text
+https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij/pull/11
+```
+
+CI на Pull Request успішно пройшов на Ubuntu, Windows і macOS.
+
 У фінальному Pull Request буде використано:
 
 ```text
