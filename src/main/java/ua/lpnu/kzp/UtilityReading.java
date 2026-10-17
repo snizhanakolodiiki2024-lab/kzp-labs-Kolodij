@@ -3,9 +3,9 @@ package ua.lpnu.kzp;
 import java.util.Locale;
 
 /**
- * Represents one utility meter reading.
+ * Represents a common base type for utility meter readings.
  */
-public final class UtilityReading {
+public abstract class UtilityReading {
 
     private final String meter;
     private final String date;
@@ -13,7 +13,7 @@ public final class UtilityReading {
     private final double tariff;
 
     /**
-     * Creates a utility reading.
+     * Creates a utility reading and validates common invariants.
      *
      * @param meter meter name
      * @param date reading date
@@ -21,7 +21,12 @@ public final class UtilityReading {
      * @param tariff tariff for one unit
      * @throws IllegalArgumentException if any value is invalid
      */
-    public UtilityReading(String meter, String date, double value, double tariff) {
+    protected UtilityReading(
+            String meter,
+            String date,
+            double value,
+            double tariff) {
+
         if (meter == null || meter.isBlank()) {
             throw new IllegalArgumentException(
                     "поле meter не може бути порожнім"
@@ -65,29 +70,29 @@ public final class UtilityReading {
     }
 
     /**
-     * Returns meter.
+     * Returns meter name.
      *
      * @return meter name
      */
-    public String getMeter() {
+    public final String getMeter() {
         return meter;
     }
 
     /**
-     * Returns date.
+     * Returns reading date.
      *
      * @return reading date
      */
-    public String getDate() {
+    public final String getDate() {
         return date;
     }
 
     /**
-     * Returns value.
+     * Returns consumed value.
      *
      * @return consumed value
      */
-    public double getValue() {
+    public final double getValue() {
         return value;
     }
 
@@ -96,9 +101,23 @@ public final class UtilityReading {
      *
      * @return tariff for one unit
      */
-    public double getTariff() {
+    public final double getTariff() {
         return tariff;
     }
+
+    /**
+     * Returns the utility category.
+     *
+     * @return utility kind
+     */
+    public abstract UtilityKind getKind();
+
+    /**
+     * Calculates the cost of this utility consumption.
+     *
+     * @return calculated consumption cost
+     */
+    public abstract double calculateCost();
 
     /**
      * Creates a utility reading from one CSV line.
@@ -134,7 +153,7 @@ public final class UtilityReading {
             double value = Double.parseDouble(parts[2].trim());
             double tariff = Double.parseDouble(parts[3].trim());
 
-            return new UtilityReading(
+            return createReading(
                     meter,
                     date,
                     value,
@@ -149,7 +168,52 @@ public final class UtilityReading {
     }
 
     /**
-     * Creates a new builder for UtilityReading.
+     * Creates a concrete utility reading according to meter type.
+     *
+     * @param meter meter name
+     * @param date reading date
+     * @param value consumed value
+     * @param tariff tariff for one unit
+     * @return concrete utility reading
+     * @throws IllegalArgumentException if meter type is unsupported
+     */
+    private static UtilityReading createReading(
+            String meter,
+            String date,
+            double value,
+            double tariff) {
+
+        if (meter != null && meter.startsWith("Електролічильник")) {
+            return new ElectricityReading(
+                    meter,
+                    date,
+                    value,
+                    tariff
+            );
+        }
+
+        if (meter != null && meter.startsWith("Водомір")) {
+            return new WaterReading(
+                    meter,
+                    date,
+                    value,
+                    tariff
+            );
+        }
+
+        if (meter == null || meter.isBlank()) {
+            throw new IllegalArgumentException(
+                    "поле meter не може бути порожнім"
+            );
+        }
+
+        throw new IllegalArgumentException(
+                "невідомий тип лічильника"
+        );
+    }
+
+    /**
+     * Creates a new builder for utility readings.
      *
      * @return new builder
      */
@@ -158,7 +222,7 @@ public final class UtilityReading {
     }
 
     /**
-     * Builder for creating UtilityReading objects.
+     * Builder for creating concrete UtilityReading objects.
      */
     public static final class Builder {
 
@@ -212,13 +276,13 @@ public final class UtilityReading {
         }
 
         /**
-         * Creates UtilityReading using the main constructor.
+         * Creates a concrete UtilityReading using the common validation.
          *
          * @return created utility reading
          * @throws IllegalArgumentException if any value is invalid
          */
         public UtilityReading build() {
-            return new UtilityReading(
+            return createReading(
                     meter,
                     date,
                     value,

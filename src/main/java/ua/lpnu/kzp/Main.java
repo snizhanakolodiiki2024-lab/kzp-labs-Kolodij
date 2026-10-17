@@ -211,10 +211,10 @@ public final class Main {
         double totalCost = 0.0;
         double maxConsumption = 0.0;
 
-        for (UtilityReading reading : readings) {
+for (UtilityReading reading : readings) {
     ConsumptionCost consumptionCost = new ConsumptionCost(
             reading.getValue(),
-            reading.getValue() * reading.getTariff()
+            reading.calculateCost()
     );
 
     totalConsumption += consumptionCost.consumption();

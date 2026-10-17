@@ -12,7 +12,7 @@ class UtilityReadingTest {
 
     @Test
     void constructorCreatesValidReading() {
-        UtilityReading reading = new UtilityReading(
+        UtilityReading reading = new WaterReading(
                 "Водомір-1",
                 "2026-09-01",
                 10.0,
@@ -27,7 +27,7 @@ class UtilityReadingTest {
 
     @Test
     void constructorAcceptsZeroValues() {
-        UtilityReading reading = new UtilityReading(
+        UtilityReading reading = new WaterReading(
                 "Водомір-1",
                 "2026-09-01",
                 0.0,
@@ -42,7 +42,7 @@ class UtilityReadingTest {
     void constructorRejectsNullMeter() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new UtilityReading(
+                () -> new WaterReading(
                         null,
                         "2026-09-01",
                         10.0,
@@ -55,7 +55,7 @@ class UtilityReadingTest {
     void constructorRejectsBlankMeter() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new UtilityReading(
+                () -> new WaterReading(
                         "   ",
                         "2026-09-01",
                         10.0,
@@ -68,7 +68,7 @@ class UtilityReadingTest {
     void constructorRejectsNullDate() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new UtilityReading(
+                () -> new WaterReading(
                         "Водомір-1",
                         null,
                         10.0,
@@ -81,7 +81,7 @@ class UtilityReadingTest {
     void constructorRejectsBlankDate() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new UtilityReading(
+                () -> new WaterReading(
                         "Водомір-1",
                         "   ",
                         10.0,
@@ -94,7 +94,7 @@ class UtilityReadingTest {
     void constructorRejectsNegativeValue() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new UtilityReading(
+                () -> new WaterReading(
                         "Водомір-1",
                         "2026-09-01",
                         -1.0,
@@ -107,7 +107,7 @@ class UtilityReadingTest {
     void constructorRejectsNegativeTariff() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new UtilityReading(
+                () -> new WaterReading(
                         "Водомір-1",
                         "2026-09-01",
                         10.0,
@@ -120,7 +120,7 @@ class UtilityReadingTest {
     void constructorRejectsNanValue() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new UtilityReading(
+                () -> new WaterReading(
                         "Водомір-1",
                         "2026-09-01",
                         Double.NaN,
@@ -133,7 +133,7 @@ class UtilityReadingTest {
     void constructorRejectsPositiveInfinityValue() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new UtilityReading(
+                () -> new WaterReading(
                         "Водомір-1",
                         "2026-09-01",
                         Double.POSITIVE_INFINITY,
@@ -146,7 +146,7 @@ class UtilityReadingTest {
     void constructorRejectsNegativeInfinityValue() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new UtilityReading(
+                () -> new WaterReading(
                         "Водомір-1",
                         "2026-09-01",
                         Double.NEGATIVE_INFINITY,
@@ -159,7 +159,7 @@ class UtilityReadingTest {
     void constructorRejectsNanTariff() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new UtilityReading(
+                () -> new WaterReading(
                         "Водомір-1",
                         "2026-09-01",
                         10.0,
@@ -172,7 +172,7 @@ class UtilityReadingTest {
     void constructorRejectsPositiveInfinityTariff() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new UtilityReading(
+                () -> new WaterReading(
                         "Водомір-1",
                         "2026-09-01",
                         10.0,
@@ -185,7 +185,7 @@ class UtilityReadingTest {
     void constructorRejectsNegativeInfinityTariff() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new UtilityReading(
+                () -> new WaterReading(
                         "Водомір-1",
                         "2026-09-01",
                         10.0,
