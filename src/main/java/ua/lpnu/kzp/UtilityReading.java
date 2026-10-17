@@ -13,13 +13,12 @@ public abstract class UtilityReading {
     private final double tariff;
 
     /**
-     * Creates a utility reading and validates common invariants.
+     * Creates a utility reading from validated common values.
      *
      * @param meter meter name
      * @param date reading date
      * @param value consumed value
      * @param tariff tariff for one unit
-     * @throws IllegalArgumentException if any value is invalid
      */
     protected UtilityReading(
             String meter,
@@ -27,18 +26,54 @@ public abstract class UtilityReading {
             double value,
             double tariff) {
 
+        this.meter = meter;
+        this.date = date;
+        this.value = value;
+        this.tariff = tariff;
+    }
+
+    /**
+     * Validates meter name.
+     *
+     * @param meter meter name
+     * @return validated meter name
+     * @throws IllegalArgumentException if meter is null or blank
+     */
+    protected static String validateMeter(String meter) {
         if (meter == null || meter.isBlank()) {
             throw new IllegalArgumentException(
                     "поле meter не може бути порожнім"
             );
         }
 
+        return meter;
+    }
+
+    /**
+     * Validates reading date.
+     *
+     * @param date reading date
+     * @return validated date
+     * @throws IllegalArgumentException if date is null or blank
+     */
+    protected static String validateDate(String date) {
         if (date == null || date.isBlank()) {
             throw new IllegalArgumentException(
                     "поле date не може бути порожнім"
             );
         }
 
+        return date;
+    }
+
+    /**
+     * Validates consumed value.
+     *
+     * @param value consumed value
+     * @return validated value
+     * @throws IllegalArgumentException if value is invalid
+     */
+    protected static double validateValue(double value) {
         if (!Double.isFinite(value)) {
             throw new IllegalArgumentException(
                     "value має бути скінченним числом"
@@ -51,6 +86,17 @@ public abstract class UtilityReading {
             );
         }
 
+        return value;
+    }
+
+    /**
+     * Validates tariff.
+     *
+     * @param tariff tariff for one unit
+     * @return validated tariff
+     * @throws IllegalArgumentException if tariff is invalid
+     */
+    protected static double validateTariff(double tariff) {
         if (!Double.isFinite(tariff)) {
             throw new IllegalArgumentException(
                     "tariff має бути скінченним числом"
@@ -63,10 +109,7 @@ public abstract class UtilityReading {
             );
         }
 
-        this.meter = meter;
-        this.date = date;
-        this.value = value;
-        this.tariff = tariff;
+        return tariff;
     }
 
     /**
@@ -183,7 +226,9 @@ public abstract class UtilityReading {
             double value,
             double tariff) {
 
-        if (meter != null && meter.startsWith("Електролічильник")) {
+        if (meter != null
+                && meter.startsWith("Електролічильник")) {
+
             return new ElectricityReading(
                     meter,
                     date,
@@ -192,7 +237,9 @@ public abstract class UtilityReading {
             );
         }
 
-        if (meter != null && meter.startsWith("Водомір")) {
+        if (meter != null
+                && meter.startsWith("Водомір")) {
+
             return new WaterReading(
                     meter,
                     date,
@@ -276,7 +323,7 @@ public abstract class UtilityReading {
         }
 
         /**
-         * Creates a concrete UtilityReading using the common validation.
+         * Creates a concrete UtilityReading using common validation.
          *
          * @return created utility reading
          * @throws IllegalArgumentException if any value is invalid

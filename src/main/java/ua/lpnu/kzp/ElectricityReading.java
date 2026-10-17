@@ -49,7 +49,12 @@ public final class ElectricityReading extends UtilityReading {
             double tariff,
             double tariffCoefficient) {
 
-        super(meter, date, value, tariff);
+        super(
+        validateMeter(meter),
+        validateDate(date),
+        validateValue(value),
+        validateTariff(tariff)
+);
 
         if (!Double.isFinite(tariffCoefficient)) {
             throw new IllegalArgumentException(

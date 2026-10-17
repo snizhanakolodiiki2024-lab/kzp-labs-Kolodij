@@ -49,7 +49,12 @@ public final class WaterReading extends UtilityReading {
             double tariff,
             double serviceFee) {
 
-        super(meter, date, value, tariff);
+        super(
+        validateMeter(meter),
+        validateDate(date),
+        validateValue(value),
+        validateTariff(tariff)
+);
 
         if (!Double.isFinite(serviceFee)) {
             throw new IllegalArgumentException(
