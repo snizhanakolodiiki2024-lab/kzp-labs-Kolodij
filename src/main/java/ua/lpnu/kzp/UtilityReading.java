@@ -1,6 +1,7 @@
 package ua.lpnu.kzp;
 
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * Represents a common base type for utility meter readings.
@@ -337,6 +338,64 @@ public abstract class UtilityReading {
             );
         }
     }
+
+/**
+ * Compares subtype-specific state.
+ *
+ * @param other another reading of the same concrete type
+ * @return true if subtype-specific state is equal
+ */
+protected abstract boolean hasSameSpecificState(
+        UtilityReading other
+);
+
+/**
+ * Returns hash code of subtype-specific state.
+ *
+ * @return subtype-specific hash code
+ */
+protected abstract int specificHashCode();
+
+/**
+ * Compares this reading with another object.
+ *
+ * @param object object to compare
+ * @return true if objects are logically equal
+ */
+@Override
+public final boolean equals(Object object) {
+    if (this == object) {
+        return true;
+    }
+
+    if (object == null || getClass() != object.getClass()) {
+        return false;
+    }
+
+    UtilityReading other = (UtilityReading) object;
+
+    return Double.compare(value, other.value) == 0
+            && Double.compare(tariff, other.tariff) == 0
+            && Objects.equals(meter, other.meter)
+            && Objects.equals(date, other.date)
+            && hasSameSpecificState(other);
+}
+
+/**
+ * Returns a hash code consistent with equals.
+ *
+ * @return hash code
+ */
+@Override
+public final int hashCode() {
+    return Objects.hash(
+            meter,
+            date,
+            value,
+            tariff,
+            specificHashCode()
+    );
+}
 
     /**
      * Returns a string representation of this utility reading.

@@ -50,11 +50,11 @@ public final class ElectricityReading extends UtilityReading {
             double tariffCoefficient) {
 
         super(
-        validateMeter(meter),
-        validateDate(date),
-        validateValue(value),
-        validateTariff(tariff)
-);
+                validateMeter(meter),
+                validateDate(date),
+                validateValue(value),
+                validateTariff(tariff)
+        );
 
         if (!Double.isFinite(tariffCoefficient)) {
             throw new IllegalArgumentException(
@@ -100,5 +100,34 @@ public final class ElectricityReading extends UtilityReading {
         return getValue()
                 * getTariff()
                 * tariffCoefficient;
+    }
+
+    /**
+     * Compares electricity-specific state.
+     *
+     * @param other another electricity reading
+     * @return true if tariff coefficients are equal
+     */
+    @Override
+    protected boolean hasSameSpecificState(
+            UtilityReading other) {
+
+        ElectricityReading electricityReading =
+                (ElectricityReading) other;
+
+        return Double.compare(
+                tariffCoefficient,
+                electricityReading.tariffCoefficient
+        ) == 0;
+    }
+
+    /**
+     * Returns hash code of electricity-specific state.
+     *
+     * @return hash code
+     */
+    @Override
+    protected int specificHashCode() {
+        return Double.hashCode(tariffCoefficient);
     }
 }

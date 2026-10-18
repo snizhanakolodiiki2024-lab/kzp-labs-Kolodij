@@ -50,11 +50,11 @@ public final class WaterReading extends UtilityReading {
             double serviceFee) {
 
         super(
-        validateMeter(meter),
-        validateDate(date),
-        validateValue(value),
-        validateTariff(tariff)
-);
+                validateMeter(meter),
+                validateDate(date),
+                validateValue(value),
+                validateTariff(tariff)
+        );
 
         if (!Double.isFinite(serviceFee)) {
             throw new IllegalArgumentException(
@@ -100,5 +100,34 @@ public final class WaterReading extends UtilityReading {
         return getValue()
                 * getTariff()
                 + serviceFee;
+    }
+
+    /**
+     * Compares water-specific state.
+     *
+     * @param other another water reading
+     * @return true if service fees are equal
+     */
+    @Override
+    protected boolean hasSameSpecificState(
+            UtilityReading other) {
+
+        WaterReading waterReading =
+                (WaterReading) other;
+
+        return Double.compare(
+                serviceFee,
+                waterReading.serviceFee
+        ) == 0;
+    }
+
+    /**
+     * Returns hash code of water-specific state.
+     *
+     * @return hash code
+     */
+    @Override
+    protected int specificHashCode() {
+        return Double.hashCode(serviceFee);
     }
 }
