@@ -1210,22 +1210,27 @@ JAR публікується як workflow artifact для кожної ОС.
 lab3
 ```
 
-Фінальний Pull Request буде створено:
-
+Фінальний Pull Request:
+```text
+#16 — Lab3: inheritance, polymorphism, equality and sealed hierarchy
+```
+Посилання:
+```text
+https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij/pull/16
+```
+Злиття виконано:
 ```text
 lab3 -> main
 ```
-
-із:
-
+У Pull Request використано:
 ```text
 Closes #12
 Closes #13
 Closes #14
 Closes #15
 ```
-
-Посилання на Pull Request буде додано після його створення.
+Після merge Issues #12, #13, #14 і #15 автоматично закрито.
+CI на Pull Request успішно пройшов на Ubuntu, Windows і macOS. Усі перевірки завершилися успішно.
 
 ## 12. Порівняння Lab 2 і Lab 3
 
