@@ -1,11 +1,13 @@
 package ua.lpnu.kzp;
 
 import java.util.Locale;
+import java.util.Objects;
 
 /**
- * Represents one utility meter reading.
+ * Represents a common base type for utility meter readings.
  */
-public final class UtilityReading {
+public abstract sealed class UtilityReading
+        permits ElectricityReading, WaterReading {
 
     private final String meter;
     private final String date;
@@ -13,27 +15,67 @@ public final class UtilityReading {
     private final double tariff;
 
     /**
-     * Creates a utility reading.
+     * Creates a utility reading from validated common values.
      *
      * @param meter meter name
      * @param date reading date
      * @param value consumed value
      * @param tariff tariff for one unit
-     * @throws IllegalArgumentException if any value is invalid
      */
-    public UtilityReading(String meter, String date, double value, double tariff) {
+    protected UtilityReading(
+            String meter,
+            String date,
+            double value,
+            double tariff) {
+
+        this.meter = meter;
+        this.date = date;
+        this.value = value;
+        this.tariff = tariff;
+    }
+
+    /**
+     * Validates meter name.
+     *
+     * @param meter meter name
+     * @return validated meter name
+     * @throws IllegalArgumentException if meter is null or blank
+     */
+    protected static String validateMeter(String meter) {
         if (meter == null || meter.isBlank()) {
             throw new IllegalArgumentException(
                     "поле meter не може бути порожнім"
             );
         }
 
+        return meter;
+    }
+
+    /**
+     * Validates reading date.
+     *
+     * @param date reading date
+     * @return validated date
+     * @throws IllegalArgumentException if date is null or blank
+     */
+    protected static String validateDate(String date) {
         if (date == null || date.isBlank()) {
             throw new IllegalArgumentException(
                     "поле date не може бути порожнім"
             );
         }
 
+        return date;
+    }
+
+    /**
+     * Validates consumed value.
+     *
+     * @param value consumed value
+     * @return validated value
+     * @throws IllegalArgumentException if value is invalid
+     */
+    protected static double validateValue(double value) {
         if (!Double.isFinite(value)) {
             throw new IllegalArgumentException(
                     "value має бути скінченним числом"
@@ -46,6 +88,17 @@ public final class UtilityReading {
             );
         }
 
+        return value;
+    }
+
+    /**
+     * Validates tariff.
+     *
+     * @param tariff tariff for one unit
+     * @return validated tariff
+     * @throws IllegalArgumentException if tariff is invalid
+     */
+    protected static double validateTariff(double tariff) {
         if (!Double.isFinite(tariff)) {
             throw new IllegalArgumentException(
                     "tariff має бути скінченним числом"
@@ -58,36 +111,33 @@ public final class UtilityReading {
             );
         }
 
-        this.meter = meter;
-        this.date = date;
-        this.value = value;
-        this.tariff = tariff;
+        return tariff;
     }
 
     /**
-     * Returns meter.
+     * Returns meter name.
      *
      * @return meter name
      */
-    public String getMeter() {
+    public final String getMeter() {
         return meter;
     }
 
     /**
-     * Returns date.
+     * Returns reading date.
      *
      * @return reading date
      */
-    public String getDate() {
+    public final String getDate() {
         return date;
     }
 
     /**
-     * Returns value.
+     * Returns consumed value.
      *
      * @return consumed value
      */
-    public double getValue() {
+    public final double getValue() {
         return value;
     }
 
@@ -96,9 +146,53 @@ public final class UtilityReading {
      *
      * @return tariff for one unit
      */
-    public double getTariff() {
+    public final double getTariff() {
         return tariff;
     }
+
+    /**
+     * Returns the utility category.
+     *
+     * @return utility kind
+     */
+    public abstract UtilityKind getKind();
+
+    /**
+     * Calculates the cost of this utility consumption.
+     *
+     * @return calculated consumption cost
+     */
+    public abstract double calculateCost();
+
+    /**
+ * Returns subtype-specific details using an exhaustive pattern switch.
+ *
+ * @param reading utility reading
+ * @return subtype-specific details
+ * @throws NullPointerException if reading is null
+ */
+public static String describeSpecificState(
+        UtilityReading reading) {
+
+    Objects.requireNonNull(
+            reading,
+            "reading не може бути null"
+    );
+
+    return switch (reading) {
+        case ElectricityReading electricity -> String.format(
+                Locale.ROOT,
+                "tariffCoefficient=%.2f",
+                electricity.getTariffCoefficient()
+        );
+
+        case WaterReading water -> String.format(
+                Locale.ROOT,
+                "serviceFee=%.2f",
+                water.getServiceFee()
+        );
+    };
+}
 
     /**
      * Creates a utility reading from one CSV line.
@@ -134,7 +228,7 @@ public final class UtilityReading {
             double value = Double.parseDouble(parts[2].trim());
             double tariff = Double.parseDouble(parts[3].trim());
 
-            return new UtilityReading(
+            return createReading(
                     meter,
                     date,
                     value,
@@ -149,7 +243,56 @@ public final class UtilityReading {
     }
 
     /**
-     * Creates a new builder for UtilityReading.
+     * Creates a concrete utility reading according to meter type.
+     *
+     * @param meter meter name
+     * @param date reading date
+     * @param value consumed value
+     * @param tariff tariff for one unit
+     * @return concrete utility reading
+     * @throws IllegalArgumentException if meter type is unsupported
+     */
+    private static UtilityReading createReading(
+            String meter,
+            String date,
+            double value,
+            double tariff) {
+
+        if (meter != null
+                && meter.startsWith("Електролічильник")) {
+
+            return new ElectricityReading(
+                    meter,
+                    date,
+                    value,
+                    tariff
+            );
+        }
+
+        if (meter != null
+                && meter.startsWith("Водомір")) {
+
+            return new WaterReading(
+                    meter,
+                    date,
+                    value,
+                    tariff
+            );
+        }
+
+        if (meter == null || meter.isBlank()) {
+            throw new IllegalArgumentException(
+                    "поле meter не може бути порожнім"
+            );
+        }
+
+        throw new IllegalArgumentException(
+                "невідомий тип лічильника"
+        );
+    }
+
+    /**
+     * Creates a new builder for utility readings.
      *
      * @return new builder
      */
@@ -158,7 +301,7 @@ public final class UtilityReading {
     }
 
     /**
-     * Builder for creating UtilityReading objects.
+     * Builder for creating concrete UtilityReading objects.
      */
     public static final class Builder {
 
@@ -212,13 +355,13 @@ public final class UtilityReading {
         }
 
         /**
-         * Creates UtilityReading using the main constructor.
+         * Creates a concrete UtilityReading using common validation.
          *
          * @return created utility reading
          * @throws IllegalArgumentException if any value is invalid
          */
         public UtilityReading build() {
-            return new UtilityReading(
+            return createReading(
                     meter,
                     date,
                     value,
@@ -226,6 +369,64 @@ public final class UtilityReading {
             );
         }
     }
+
+/**
+ * Compares subtype-specific state.
+ *
+ * @param other another reading of the same concrete type
+ * @return true if subtype-specific state is equal
+ */
+protected abstract boolean hasSameSpecificState(
+        UtilityReading other
+);
+
+/**
+ * Returns hash code of subtype-specific state.
+ *
+ * @return subtype-specific hash code
+ */
+protected abstract int specificHashCode();
+
+/**
+ * Compares this reading with another object.
+ *
+ * @param object object to compare
+ * @return true if objects are logically equal
+ */
+@Override
+public final boolean equals(Object object) {
+    if (this == object) {
+        return true;
+    }
+
+    if (object == null || getClass() != object.getClass()) {
+        return false;
+    }
+
+    UtilityReading other = (UtilityReading) object;
+
+    return Double.compare(value, other.value) == 0
+            && Double.compare(tariff, other.tariff) == 0
+            && Objects.equals(meter, other.meter)
+            && Objects.equals(date, other.date)
+            && hasSameSpecificState(other);
+}
+
+/**
+ * Returns a hash code consistent with equals.
+ *
+ * @return hash code
+ */
+@Override
+public final int hashCode() {
+    return Objects.hash(
+            meter,
+            date,
+            value,
+            tariff,
+            specificHashCode()
+    );
+}
 
     /**
      * Returns a string representation of this utility reading.

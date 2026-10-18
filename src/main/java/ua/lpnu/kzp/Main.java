@@ -9,11 +9,11 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Головний клас консольної програми лабораторної роботи №2.
+ * Головний клас консольної програми лабораторної роботи №3.
  */
 public final class Main {
 
-    private static final String VERSION = "2.0.0";
+    private static final String VERSION = "3.0.0";
     private static final int EXIT_SUCCESS = 0;
     private static final int EXIT_ARGUMENT_ERROR = 1;
     private static final int EXIT_IO_ERROR = 2;
@@ -211,10 +211,10 @@ public final class Main {
         double totalCost = 0.0;
         double maxConsumption = 0.0;
 
-        for (UtilityReading reading : readings) {
+for (UtilityReading reading : readings) {
     ConsumptionCost consumptionCost = new ConsumptionCost(
             reading.getValue(),
-            reading.getValue() * reading.getTariff()
+            reading.calculateCost()
     );
 
     totalConsumption += consumptionCost.consumption();
