@@ -608,6 +608,8 @@ UtilityReading
 
 `UtilityReading` став абстрактним базовим класом і містить спільні поля та валідацію.
 
+`ElectricityReading` і `WaterReading` є різновидами `UtilityReading` (`is-a`), тому для них використано спадкування.
+
 Підтипи мають власні правила:
 
 - `ElectricityReading` — використовує `tariffCoefficient`;
