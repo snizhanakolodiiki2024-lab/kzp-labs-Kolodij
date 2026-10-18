@@ -1130,7 +1130,7 @@ UtilityReadingEqualityTest
 Результат:
 
 ```text
-Tests run: 56, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 58, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
@@ -1197,7 +1197,7 @@ JAR публікується як workflow artifact для кожної ОС.
 | Issue | Виконана робота | Перевірка |
 | --- | --- | --- |
 | `#12` | `UtilityReading`, `ElectricityReading`, `WaterReading`, `UtilityKind`, поліморфізм | тести підтипів і контрольний звіт |
-| `#13` | `equals()`, `hashCode()`, автоматизовані тести | `HashSet`, 56 тестів |
+| `#13` | `equals()`, `hashCode()`, автоматизовані тести | `HashSet`, 58 тестів |
 | `#14` | Maven, SpotBugs та виконуваний JAR | `verify`, SpotBugs, запуск JAR |
 | `#15` | CI, документація, версія та реліз | Windows, Ubuntu, macOS |
 
@@ -1235,7 +1235,7 @@ Closes #15
 | Обробка | `List<UtilityReading>` | `List<UtilityReading>` з різними підтипами |
 | Рівність | стандартна `Object` | `equals()` + `hashCode()` |
 | Перевірка колекції | не використовувалась | `HashSet` |
-| Кількість тестів | 38 | 56 |
+| Кількість тестів | 38 | 58 |
 | Версія | `2.0.0` | `3.0.0` |
 | JAR | `lab01-2.0.0.jar` | `lab01-3.0.0.jar` |
 
@@ -1356,7 +1356,70 @@ reading.calculateCost();
 
 де `reading` має тип `UtilityReading`, а потрібна реалізація вибирається автоматично залежно від фактичного підтипу.
 
-## 15. Висновки
+## 15. Додаткове завдання ⭐ — sealed-ієрархія
+
+Базовий клас `UtilityReading` оголошено як:
+
+```java
+public abstract sealed class UtilityReading
+        permits ElectricityReading, WaterReading
+```
+
+Ключове слово `sealed` обмежує перелік класів, які можуть безпосередньо успадковувати `UtilityReading`.
+
+Дозволені підтипи:
+
+```text
+ElectricityReading
+WaterReading
+```
+
+Обидва підтипи оголошені як `final`.
+
+Для демонстрації перевірки вичерпності створено метод із pattern matching у `switch`:
+
+```java
+return switch (reading) {
+    case ElectricityReading electricity -> ...
+    case WaterReading water -> ...
+};
+```
+
+Гілка `default` відсутня. Компілятор Java може перевірити вичерпність `switch`, оскільки знає всі дозволені підтипи sealed-ієрархії.
+
+Якщо прибрати одну з гілок, наприклад:
+
+```java
+case WaterReading water -> ...
+```
+
+`switch` перестане бути вичерпним і код не скомпілюється.
+
+У цьому `switch` не дублюється поліморфний розрахунок вартості. Вартість, як і раніше, визначається через:
+
+```java
+reading.calculateCost();
+```
+
+а `switch` використовується лише для представлення специфічного стану підтипу:
+
+```text
+ElectricityReading -> tariffCoefficient
+WaterReading       -> serviceFee
+```
+
+Додано `SealedHierarchyTest`, який перевіряє обидва дозволені підтипи.
+
+Після додаткового завдання:
+
+```text
+Tests run: 58, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+Maven `verify` і SpotBugs також завершуються успішно.
+
+## 16. Висновки
 
 У лабораторній роботі №3:
 
@@ -1368,7 +1431,7 @@ reading.calculateCost();
 - об'єкти обробляються через `List<UtilityReading>`;
 - реалізовано `equals()` і `hashCode()`;
 - рівність перевірено через `HashSet`;
-- кількість тестів збільшено з 38 до 56;
+- кількість тестів збільшено з 38 до 58;
 - Maven `verify` і SpotBugs проходять успішно;
 - версію оновлено до `3.0.0`;
 - CI працює на Ubuntu, Windows і macOS;

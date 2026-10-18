@@ -6,7 +6,8 @@ import java.util.Objects;
 /**
  * Represents a common base type for utility meter readings.
  */
-public abstract class UtilityReading {
+public abstract sealed class UtilityReading
+        permits ElectricityReading, WaterReading {
 
     private final String meter;
     private final String date;
@@ -162,6 +163,36 @@ public abstract class UtilityReading {
      * @return calculated consumption cost
      */
     public abstract double calculateCost();
+
+    /**
+ * Returns subtype-specific details using an exhaustive pattern switch.
+ *
+ * @param reading utility reading
+ * @return subtype-specific details
+ * @throws NullPointerException if reading is null
+ */
+public static String describeSpecificState(
+        UtilityReading reading) {
+
+    Objects.requireNonNull(
+            reading,
+            "reading не може бути null"
+    );
+
+    return switch (reading) {
+        case ElectricityReading electricity -> String.format(
+                Locale.ROOT,
+                "tariffCoefficient=%.2f",
+                electricity.getTariffCoefficient()
+        );
+
+        case WaterReading water -> String.format(
+                Locale.ROOT,
+                "serviceFee=%.2f",
+                water.getServiceFee()
+        );
+    };
+}
 
     /**
      * Creates a utility reading from one CSV line.

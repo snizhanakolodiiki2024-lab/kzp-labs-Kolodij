@@ -678,7 +678,7 @@ HashSet<UtilityReading>
 | Обробка | `List<UtilityReading>` | `List<UtilityReading>` з різними підтипами |
 | Рівність | стандартна `Object` | `equals()` + `hashCode()` |
 | Перевірка колекції | не використовувалась | `HashSet` |
-| Кількість тестів | 38 | 56 |
+| Кількість тестів | 38 | 58 |
 | Версія | `2.0.0` | `3.0.0` |
 | JAR | `lab01-2.0.0.jar` | `lab01-3.0.0.jar` |
 
@@ -710,7 +710,7 @@ meter;date;value;tariff
 Результат:
 
 ```text
-Tests run: 56, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 58, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
@@ -753,6 +753,36 @@ java -jar target\lab01-3.0.0.jar --version
 ```text
 Version 3.0.0
 ```
+## Додаткове завдання ⭐ — sealed-ієрархія
+
+Базовий тип оголошено як `sealed`:
+
+```java
+public abstract sealed class UtilityReading
+        permits ElectricityReading, WaterReading
+```
+
+Тому безпосередніми підтипами можуть бути лише:
+
+```text
+ElectricityReading
+WaterReading
+```
+
+Для демонстрації вичерпної перевірки використано pattern matching у `switch`:
+
+```java
+return switch (reading) {
+    case ElectricityReading electricity -> ...
+    case WaterReading water -> ...
+};
+```
+
+Гілка `default` не потрібна, оскільки компілятор знає повний перелік дозволених підтипів.
+
+`switch` не дублює логіку `calculateCost()`: він використовується лише для отримання специфічного стану підтипу.
+
+Для sealed-ієрархії додано окремі тести. Загальна кількість тестів — 58.
 
 ## Підсумок
 
@@ -764,6 +794,6 @@ Version 3.0.0
 - реалізовано поліморфний `calculateCost()`;
 - реалізовано `equals()` і `hashCode()`;
 - рівність перевірено через `HashSet`;
-- кількість тестів збільшено до 56;
+- кількість тестів збільшено до 58;
 - збережено результати попередньої роботи;
 - версію оновлено до `3.0.0`.
