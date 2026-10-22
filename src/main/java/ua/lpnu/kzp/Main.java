@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
+import java.util.DoubleSummaryStatistics;
 
 /**
  * Головний клас консольної програми лабораторної роботи №4.
@@ -251,23 +252,16 @@ public final class Main {
             return null;
         }
 
-        double totalConsumption = 0.0;
-        double totalCost = 0.0;
-        double maxConsumption = 0.0;
+        DoubleSummaryStatistics statistics =
+        UtilityReadingQueries.valueStatistics(readings);
 
-        for (UtilityReading reading : readings) {
-            ConsumptionCost consumptionCost = new ConsumptionCost(
-                    reading.getValue(),
-                    reading.calculateCost()
-            );
+double totalConsumption = statistics.getSum();
 
-            totalConsumption += consumptionCost.consumption();
-            totalCost += consumptionCost.cost();
-            maxConsumption = Math.max(
-                    maxConsumption,
-                    consumptionCost.consumption()
-            );
-        }
+double totalCost = readings.stream()
+        .mapToDouble(UtilityReading::calculateCost)
+        .sum();
+
+double maxConsumption = statistics.getMax();
 
         return formatReport(
                 readings.size(),
