@@ -379,4 +379,66 @@ void streamQueriesDoNotModifyInputList() {
 
     assertEquals(originalOrder, readings);
 }
+
+@Test
+void sumByKindAndMeterGroupsByKindAndMeter() {
+    List<UtilityReading> readings = List.of(
+            new ElectricityReading(
+                    "Електролічильник 1",
+                    "2026-10-01",
+                    50.0,
+                    2.0),
+            new ElectricityReading(
+                    "Електролічильник 1",
+                    "2026-10-02",
+                    30.0,
+                    2.0),
+            new ElectricityReading(
+                    "Електролічильник 2",
+                    "2026-10-03",
+                    40.0,
+                    2.5),
+            new WaterReading(
+                    "Водомір 1",
+                    "2026-10-04",
+                    20.0,
+                    3.0),
+            new WaterReading(
+                    "Водомір 1",
+                    "2026-10-05",
+                    15.0,
+                    3.0)
+    );
+
+    Map<UtilityKind, Map<String, Double>> result =
+            UtilityReadingQueries.sumByKindAndMeter(readings);
+
+    assertEquals(2, result.size());
+
+    assertEquals(
+            80.0,
+            result.get(UtilityKind.ELECTRICITY)
+                    .get("Електролічильник 1")
+    );
+
+    assertEquals(
+            40.0,
+            result.get(UtilityKind.ELECTRICITY)
+                    .get("Електролічильник 2")
+    );
+
+    assertEquals(
+            35.0,
+            result.get(UtilityKind.WATER)
+                    .get("Водомір 1")
+    );
+}
+
+@Test
+void sumByKindAndMeterReturnsEmptyMapForEmptyInput() {
+    Map<UtilityKind, Map<String, Double>> result =
+            UtilityReadingQueries.sumByKindAndMeter(List.of());
+
+    assertTrue(result.isEmpty());
+}
 }

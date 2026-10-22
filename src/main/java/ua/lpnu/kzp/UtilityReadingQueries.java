@@ -135,4 +135,30 @@ public static Optional<UtilityReading> findByMeter(
             .filter(reading -> reading.getMeter().equals(meter))
             .findFirst();
 }
+
+/**
+ * Групує показники спочатку за категорією,
+ * потім за назвою лічильника та обчислює
+ * сумарне споживання для кожної групи.
+ *
+ * @param readings вхідна колекція показників
+ * @return дворівнева карта category -> meter -> total consumption
+ * @throws NullPointerException якщо readings дорівнює null
+ */
+public static Map<UtilityKind, Map<String, Double>> sumByKindAndMeter(
+        List<UtilityReading> readings) {
+
+    Objects.requireNonNull(readings, "readings must not be null");
+
+    return readings.stream()
+            .collect(Collectors.groupingBy(
+                    UtilityReading::getKind,
+                    Collectors.groupingBy(
+                            UtilityReading::getMeter,
+                            Collectors.summingDouble(
+                                    UtilityReading::getValue
+                            )
+                    )
+            ));
+}
 }
