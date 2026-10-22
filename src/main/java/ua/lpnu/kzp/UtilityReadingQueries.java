@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.DoubleSummaryStatistics;
+import java.util.Comparator;
+import java.util.Optional;
 
 /**
  * Містить потокові запити для колекції комунальних показників.
@@ -62,5 +65,74 @@ public static Map<String, Double> sumByMeter(List<UtilityReading> readings) {
                     UtilityReading::getMeter,
                     Collectors.summingDouble(UtilityReading::getValue)
             ));
+}
+
+/**
+ * Повертає зведену статистику для значень споживання.
+ *
+ * @param readings вхідна колекція показників
+ * @return статистика значень споживання
+ * @throws NullPointerException якщо readings дорівнює null
+ */
+public static DoubleSummaryStatistics valueStatistics(
+        List<UtilityReading> readings) {
+
+    Objects.requireNonNull(readings, "readings must not be null");
+
+    return readings.stream()
+            .collect(Collectors.summarizingDouble(
+                    UtilityReading::getValue
+            ));
+}
+
+/**
+ * Повертає перші N показників, відсортованих за значенням
+ * споживання за спаданням і датою за зростанням.
+ *
+ * @param readings вхідна колекція показників
+ * @param n максимальна кількість елементів
+ * @return відсортований список перших N показників
+ * @throws NullPointerException якщо readings дорівнює null
+ * @throws IllegalArgumentException якщо n від'ємне
+ */
+public static List<UtilityReading> topByValue(
+        List<UtilityReading> readings,
+        int n) {
+
+    Objects.requireNonNull(readings, "readings must not be null");
+
+    if (n < 0) {
+        throw new IllegalArgumentException("n must not be negative");
+    }
+
+    Comparator<UtilityReading> comparator =
+            Comparator.comparingDouble(UtilityReading::getValue)
+                    .reversed()
+                    .thenComparing(UtilityReading::getDate);
+
+    return readings.stream()
+            .sorted(comparator)
+            .limit(n)
+            .toList();
+}
+
+/**
+ * Шукає перший показник із заданою назвою лічильника.
+ *
+ * @param readings вхідна колекція показників
+ * @param meter назва лічильника
+ * @return Optional із знайденим показником або Optional.empty()
+ * @throws NullPointerException якщо readings або meter дорівнює null
+ */
+public static Optional<UtilityReading> findByMeter(
+        List<UtilityReading> readings,
+        String meter) {
+
+    Objects.requireNonNull(readings, "readings must not be null");
+    Objects.requireNonNull(meter, "meter must not be null");
+
+    return readings.stream()
+            .filter(reading -> reading.getMeter().equals(meter))
+            .findFirst();
 }
 }
