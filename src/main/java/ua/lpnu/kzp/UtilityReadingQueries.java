@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import java.util.DoubleSummaryStatistics;
 import java.util.Comparator;
 import java.util.Optional;
+import java.time.LocalDate;
 
 /**
  * Містить потокові запити для колекції комунальних показників.
@@ -106,9 +107,11 @@ public static List<UtilityReading> topByValue(
     }
 
     Comparator<UtilityReading> comparator =
-            Comparator.comparingDouble(UtilityReading::getValue)
-                    .reversed()
-                    .thenComparing(UtilityReading::getDate);
+        Comparator.comparingDouble(UtilityReading::getValue)
+                .reversed()
+                .thenComparing(
+                        reading -> LocalDate.parse(reading.getDate())
+                );
 
     return readings.stream()
             .sorted(comparator)

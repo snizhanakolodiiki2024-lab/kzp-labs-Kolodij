@@ -2,6 +2,7 @@ package ua.lpnu.kzp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 
@@ -440,5 +441,215 @@ void sumByKindAndMeterReturnsEmptyMapForEmptyInput() {
             UtilityReadingQueries.sumByKindAndMeter(List.of());
 
     assertTrue(result.isEmpty());
+}
+
+@Test
+void topByValueRejectsNegativeN() {
+    List<UtilityReading> readings = List.of(
+            new ElectricityReading(
+                    "Електролічильник-1",
+                    "2026-10-01",
+                    75.0,
+                    4.32)
+    );
+
+    assertThrows(
+            IllegalArgumentException.class,
+            () -> UtilityReadingQueries.topByValue(readings, -1)
+    );
+}
+
+@Test
+void topByValueReturnsFiveBestFromSixRecords() {
+    UtilityReading first = new ElectricityReading(
+            "Електролічильник-1",
+            "2026-10-01",
+            75.0,
+            4.32);
+
+    UtilityReading second = new WaterReading(
+            "Водомір-1",
+            "2026-10-02",
+            120.0,
+            35.20);
+
+    UtilityReading third = new ElectricityReading(
+            "Електролічильник-2",
+            "2026-10-03",
+            120.0,
+            4.32);
+
+    UtilityReading fourth = new WaterReading(
+            "Водомір-2",
+            "2026-10-04",
+            80.0,
+            35.20);
+
+    UtilityReading fifth = new ElectricityReading(
+            "Електролічильник-1",
+            "2026-10-05",
+            50.0,
+            4.32);
+
+    UtilityReading sixth = new WaterReading(
+            "Водомір-3",
+            "2026-10-06",
+            30.0,
+            35.20);
+
+    List<UtilityReading> readings = List.of(
+            first,
+            second,
+            third,
+            fourth,
+            fifth,
+            sixth
+    );
+
+    List<UtilityReading> result =
+            UtilityReadingQueries.topByValue(readings, 5);
+
+    assertEquals(
+            List.of(
+                    second,
+                    third,
+                    fourth,
+                    first,
+                    fifth
+            ),
+            result
+    );
+
+    assertEquals(5, result.size());
+}
+
+@Test
+void lab4ControlDatasetProducesExpectedQueryResults() {
+    List<UtilityReading> readings = List.of(
+            new ElectricityReading(
+                    "Електролічильник-1",
+                    "2026-10-01",
+                    75.0,
+                    4.32),
+            new WaterReading(
+                    "Водомір-1",
+                    "2026-10-02",
+                    120.0,
+                    35.20),
+            new ElectricityReading(
+                    "Електролічильник-2",
+                    "2026-10-03",
+                    120.0,
+                    4.32),
+            new WaterReading(
+                    "Водомір-2",
+                    "2026-10-04",
+                    80.0,
+                    35.20),
+            new ElectricityReading(
+                    "Електролічильник-1",
+                    "2026-10-05",
+                    50.0,
+                    4.32),
+            new WaterReading(
+                    "Водомір-3",
+                    "2026-10-06",
+                    30.0,
+                    35.20)
+    );
+
+    double threshold = 75.0;
+
+    List<UtilityReading> filtered =
+            UtilityReadingQueries.filterAboveThreshold(
+                    readings,
+                    threshold
+            );
+
+    assertEquals(
+            List.of(
+                    readings.get(1),
+                    readings.get(2),
+                    readings.get(3)
+            ),
+            filtered
+    );
+
+    assertEquals(
+            List.of(
+                    75.0,
+                    120.0,
+                    120.0,
+                    80.0,
+                    50.0,
+                    30.0
+            ),
+            UtilityReadingQueries.consumptionValues(readings)
+    );
+
+    Map<String, Double> grouped =
+            UtilityReadingQueries.sumByMeter(readings);
+
+    assertEquals(5, grouped.size());
+    assertEquals(
+            125.0,
+            grouped.get("Електролічильник-1")
+    );
+    assertEquals(
+            120.0,
+            grouped.get("Водомір-1")
+    );
+    assertEquals(
+            120.0,
+            grouped.get("Електролічильник-2")
+    );
+    assertEquals(
+            80.0,
+            grouped.get("Водомір-2")
+    );
+    assertEquals(
+            30.0,
+            grouped.get("Водомір-3")
+    );
+
+    DoubleSummaryStatistics statistics =
+            UtilityReadingQueries.valueStatistics(readings);
+
+    assertEquals(6, statistics.getCount());
+    assertEquals(475.0, statistics.getSum());
+    assertEquals(30.0, statistics.getMin());
+    assertEquals(120.0, statistics.getMax());
+    assertEquals(
+            475.0 / 6.0,
+            statistics.getAverage(),
+            0.000001
+    );
+
+    assertEquals(
+            List.of(
+                    readings.get(1),
+                    readings.get(2),
+                    readings.get(3),
+                    readings.get(0),
+                    readings.get(4)
+            ),
+            UtilityReadingQueries.topByValue(readings, 5)
+    );
+
+    Optional<UtilityReading> found =
+            UtilityReadingQueries.findByMeter(
+                    readings,
+                    "Електролічильник-1"
+            );
+
+    assertTrue(found.isPresent());
+    assertEquals(readings.get(0), found.get());
+
+    assertTrue(
+            UtilityReadingQueries.findByMeter(
+                    readings,
+                    "Водомір-99"
+            ).isEmpty()
+    );
 }
 }
