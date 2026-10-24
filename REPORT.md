@@ -2046,7 +2046,29 @@ CI працює на:
 ```text
 3 JAR artifacts
 ```
+### Фінальний CI Lab 4
 
+Фінальний GitHub Actions run для гілки `lab4`:
+
+```text
+https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij/actions/runs/40130894644
+```
+
+Результат:
+
+- статус: `Success`;
+- Ubuntu: `Success`;
+- Windows: `Success`;
+- macOS: `Success`;
+- виконуються 79 тестів;
+- SpotBugs не виявляє дефектів;
+- опубліковано 3 JAR artifacts.
+
+Фінальний CI run:
+
+[GitHub Actions — Lab 4, run #47](https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij/actions/runs/40130894644)
+
+JAR artifacts доступні на сторінці цього CI run у секції `Artifacts`.
 ---
 
 ## 12. GitHub Issues і Pull Request
