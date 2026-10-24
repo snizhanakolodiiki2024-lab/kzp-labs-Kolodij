@@ -1,19 +1,21 @@
 package ua.lpnu.kzp;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
+import java.util.DoubleSummaryStatistics;
 
 /**
- * Головний клас консольної програми лабораторної роботи №3.
+ * Головний клас консольної програми лабораторної роботи №4.
  */
 public final class Main {
 
-    private static final String VERSION = "3.0.0";
     private static final int EXIT_SUCCESS = 0;
     private static final int EXIT_ARGUMENT_ERROR = 1;
     private static final int EXIT_IO_ERROR = 2;
@@ -126,30 +128,73 @@ public final class Main {
      * Виводить довідку про параметри командного рядка.
      */
     private static void printHelp() {
-    System.out.printf(
-            "Використання: java -jar <файл.jar> [--help] [--version] [--input <файл>] [--output <файл>]%n"
-    );
-}
+        System.out.printf(
+                "Використання: java -jar <файл.jar> "
+                        + "[--help] [--version] "
+                        + "[--input <файл>] [--output <файл>]%n"
+        );
+    }
 
     /**
      * Виводить версію програми.
      */
     private static void printVersion() {
+        String version = getVersion();
         String buildNumber = System.getenv("CI_BUILD_NUMBER");
 
         if (buildNumber == null || buildNumber.isBlank()) {
             System.out.printf(
                     "Version %s%n",
-                    VERSION
+                    version
             );
             return;
         }
 
         System.out.printf(
                 "Version %s (build %s)%n",
-                VERSION,
+                version,
                 buildNumber
         );
+    }
+
+    /**
+     * Повертає версію програми, яку Maven підставляє
+     * у файл version.properties під час збирання.
+     *
+     * @return версія програми
+     * @throws IllegalStateException якщо файл версії відсутній
+     *         або його неможливо прочитати
+     */
+    private static String getVersion() {
+        Properties properties = new Properties();
+
+        try (InputStream input = Main.class
+                .getClassLoader()
+                .getResourceAsStream("version.properties")) {
+
+            if (input == null) {
+                throw new IllegalStateException(
+                        "version.properties not found"
+                );
+            }
+
+            properties.load(input);
+
+            String version = properties.getProperty("app.version");
+
+            if (version == null || version.isBlank()) {
+                throw new IllegalStateException(
+                        "app.version is not defined"
+                );
+            }
+
+            return version;
+        } catch (IOException exception) {
+            throw new IllegalStateException(
+                    "Failed to read application version",
+                    exception
+            );
+        }
     }
 
     /**
@@ -207,23 +252,16 @@ public final class Main {
             return null;
         }
 
-        double totalConsumption = 0.0;
-        double totalCost = 0.0;
-        double maxConsumption = 0.0;
+        DoubleSummaryStatistics statistics =
+        UtilityReadingQueries.valueStatistics(readings);
 
-for (UtilityReading reading : readings) {
-    ConsumptionCost consumptionCost = new ConsumptionCost(
-            reading.getValue(),
-            reading.calculateCost()
-    );
+double totalConsumption = statistics.getSum();
 
-    totalConsumption += consumptionCost.consumption();
-    totalCost += consumptionCost.cost();
-    maxConsumption = Math.max(
-            maxConsumption,
-            consumptionCost.consumption()
-    );
-}
+double totalCost = readings.stream()
+        .mapToDouble(UtilityReading::calculateCost)
+        .sum();
+
+double maxConsumption = statistics.getMax();
 
         return formatReport(
                 readings.size(),
@@ -243,20 +281,24 @@ for (UtilityReading reading : readings) {
      * @return текст звіту
      */
     private static String formatReport(
-        int validCount,
-        double totalConsumption,
-        double totalCost,
-        double maxConsumption) {
+            int validCount,
+            double totalConsumption,
+            double totalCost,
+            double maxConsumption) {
 
-    return String.format(
-            Locale.ROOT,
-            "Результати:%nКількість коректних записів: %d%nСумарне споживання: %.2f%nЗагальна вартість: %.2f%nНайбільше споживання: %.2f%n",
-            validCount,
-            totalConsumption,
-            totalCost,
-            maxConsumption
-    );
-}
+        return String.format(
+                Locale.ROOT,
+                "Результати:%n"
+                        + "Кількість коректних записів: %d%n"
+                        + "Сумарне споживання: %.2f%n"
+                        + "Загальна вартість: %.2f%n"
+                        + "Найбільше споживання: %.2f%n",
+                validCount,
+                totalConsumption,
+                totalCost,
+                maxConsumption
+        );
+    }
 
     /**
      * Записує сформований звіт у файл у кодуванні UTF-8.

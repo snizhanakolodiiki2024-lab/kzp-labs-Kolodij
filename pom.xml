@@ -9,7 +9,7 @@
 
     <groupId>ua.lpnu.kzp</groupId>
     <artifactId>lab01</artifactId>
-    <version>3.0.0</version>
+    <version>4.0.0</version>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
@@ -27,8 +27,14 @@
 </dependencies>
 
 <build>
+<resources>
+    <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+    </resource>
+</resources>
     <plugins>
-
+    
         <plugin>
             <groupId>com.github.spotbugs</groupId>
             <artifactId>spotbugs-maven-plugin</artifactId>

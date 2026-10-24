@@ -1484,3 +1484,874 @@ Maven `verify` і SpotBugs також завершуються успішно.
 ```text
 v3.0.0
 ```
+
+# Лабораторна робота №4
+
+## 1. Загальна інформація
+
+- **Дисципліна:** Кросплатформні засоби програмування
+- **Тема:** Потокова обробка даних у Java-проєкті
+- **Варіант:** №9
+- **Предметна область:** комунальні показники
+- **Java:** 21
+- **ОС:** Windows
+- **Гілка:** `lab4`
+- **Версія:** `4.0.0`
+
+Репозиторій:
+
+```text
+https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij
+```
+
+Формат запису:
+
+```text
+meter;date;value;tariff
+```
+
+---
+
+## 2. Мета роботи
+
+Мета роботи — замінити основні циклові обчислення над колекцією комунальних показників декларативними запитами Java Stream API без зміни предметної області та зовнішньої поведінки програми.
+
+У роботі реалізовано:
+
+- `filter`;
+- `map`;
+- `groupingBy`;
+- `summarizingDouble`;
+- `sorted` + `limit`;
+- пошук через `Optional`;
+- тести граничних і порожніх випадків;
+- Maven, SpotBugs, JAR та CI.
+
+---
+
+## 3. Стан до і після Lab 4
+
+Після Lab 3 використовувалася поліморфна модель:
+
+```text
+UtilityReading
+├── ElectricityReading
+└── WaterReading
+```
+
+Обробка виконується через:
+
+```java
+List<UtilityReading>
+```
+
+Вартість визначається поліморфно:
+
+```java
+reading.calculateCost();
+```
+
+До Lab 4 основні підсумки в `Main` накопичувалися вручну в циклі `for`.
+
+Після Lab 4 створено клас:
+
+```text
+UtilityReadingQueries
+```
+
+Сума та максимум:
+
+```java
+DoubleSummaryStatistics statistics =
+        UtilityReadingQueries.valueStatistics(readings);
+
+double totalConsumption = statistics.getSum();
+double maxConsumption = statistics.getMax();
+```
+
+Загальна вартість:
+
+```java
+double totalCost = readings.stream()
+        .mapToDouble(UtilityReading::calculateCost)
+        .sum();
+```
+
+Цикл читання CSV залишено, оскільки він потрібний для нумерації рядків та окремої обробки помилок.
+
+---
+
+## 4. Контракт даних
+
+Базовий тип:
+
+```java
+UtilityReading
+```
+
+Основні поля:
+
+```java
+String meter
+String date
+double value
+double tariff
+```
+
+Підтипи:
+
+```text
+ElectricityReading
+WaterReading
+```
+
+Enum:
+
+```java
+UtilityKind
+```
+
+Значення:
+
+```text
+ELECTRICITY
+WATER
+```
+
+Основна поліморфна операція:
+
+```java
+public abstract double calculateCost();
+```
+
+Основні правила валідності:
+
+- `meter` і `date` не можуть бути `null` або blank;
+- `value >= 0`;
+- `tariff >= 0`;
+- числові значення повинні бути скінченними.
+
+Stream-запити працюють через базовий тип і не використовують `if` за конкретним підтипом.
+
+---
+
+## 5. П'ять Stream API запитів
+
+| № | Метод | Stream API | Результат |
+|---|---|---|---|
+| 1 | `filterAboveThreshold()` | `filter` + `toList` | `List<UtilityReading>` |
+| 2 | `consumptionValues()` | `map` + `toList` | `List<Double>` |
+| 3 | `sumByMeter()` | `groupingBy` + `summingDouble` | `Map<String, Double>` |
+| 4 | `valueStatistics()` | `summarizingDouble` | `DoubleSummaryStatistics` |
+| 5 | `topByValue()` | `sorted` + `limit` | `List<UtilityReading>` |
+
+### Filter
+
+```java
+readings.stream()
+        .filter(reading -> reading.getValue() > threshold)
+        .toList();
+```
+
+Умова є строгою:
+
+```text
+value > threshold
+```
+
+### Map
+
+```java
+readings.stream()
+        .map(UtilityReading::getValue)
+        .toList();
+```
+
+### Grouping
+
+```java
+readings.stream()
+        .collect(Collectors.groupingBy(
+                UtilityReading::getMeter,
+                Collectors.summingDouble(UtilityReading::getValue)
+        ));
+```
+
+### Statistics
+
+```java
+readings.stream()
+        .collect(Collectors.summarizingDouble(
+                UtilityReading::getValue
+        ));
+```
+
+### Top-N
+
+```java
+readings.stream()
+        .sorted(comparator)
+        .limit(n)
+        .toList();
+```
+
+---
+
+## 6. Групування та статистика
+
+Результат групування:
+
+```java
+Map<String, Double>
+```
+
+Ключ:
+
+```text
+meter
+```
+
+Значення:
+
+```text
+sum(value)
+```
+
+Для дубльованого лічильника всі значення сумуються.
+
+Статистика через `DoubleSummaryStatistics` містить:
+
+```text
+count
+sum
+min
+max
+average
+```
+
+Для порожнього набору:
+
+```text
+count = 0
+sum = 0.0
+average = 0.0
+min = Infinity
+max = -Infinity
+```
+
+У `Main` порожній список обробляється раніше, тому спеціальні значення мінімуму та максимуму не потрапляють до звіту.
+
+---
+
+## 7. Comparator і top-N
+
+Вимога варіанта:
+
+```text
+top-5 — значення спаданням і дата
+```
+
+Comparator:
+
+```java
+Comparator<UtilityReading> comparator =
+        Comparator.comparingDouble(UtilityReading::getValue)
+                .reversed()
+                .thenComparing(
+                        reading -> LocalDate.parse(reading.getDate())
+                );
+```
+
+Порядок:
+
+1. `value` — спадання;
+2. дата — зростання;
+3. `limit(n)` застосовується після сортування.
+
+Дата перетворюється з ISO-формату `yyyy-MM-dd` у `LocalDate`.
+
+Перевірено:
+
+- `n = 0`;
+- `n > size`;
+- `n < 0` → `IllegalArgumentException`;
+- однакові значення `value`;
+- top-5 із набору з 6 записів.
+
+---
+
+## 8. Optional
+
+Пошук:
+
+```java
+public static Optional<UtilityReading> findByMeter(
+        List<UtilityReading> readings,
+        String meter)
+```
+
+Реалізація:
+
+```java
+return readings.stream()
+        .filter(reading -> reading.getMeter().equals(meter))
+        .findFirst();
+```
+
+Якщо запис знайдено — повертається `Optional` зі значенням.
+
+Якщо запис відсутній:
+
+```java
+Optional.empty()
+```
+
+Для дубльованого ключа `findFirst()` повертає перший запис у початковому порядку.
+
+---
+
+## 9. Еквівалентність циклу і Stream API
+
+| Обчислення | До Lab 4 | Lab 4 |
+|---|---|---|
+| Сума споживання | `+=` у циклі | `getSum()` |
+| Максимум | `Math.max()` | `getMax()` |
+| Загальна вартість | накопичення у циклі | `mapToDouble().sum()` |
+| Відбір | `if` | `filter()` |
+| Перетворення | ручне формування списку | `map()` |
+| Групування | ручна `Map` | `groupingBy()` |
+| Статистика | окремі змінні | `summarizingDouble()` |
+| Top-N | ручне сортування | `sorted()` + `limit()` |
+| Пошук | цикл / `null` | `Optional` |
+
+Контрольний звіт до і після рефакторингу:
+
+```text
+Результати:
+Кількість коректних записів: 3
+Сумарне споживання: 186.25
+Загальна вартість: 1198.32
+Найбільше споживання: 125.50
+```
+
+Файли порівнювалися через `Compare-Object`. Відмінностей немає.
+
+---
+
+## 10. Тестування
+
+До Lab 4:
+
+```text
+58 тестів
+```
+
+Після Lab 4:
+
+```text
+Tests run: 79, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+Перевірено:
+
+- усі 5 Stream API запитів;
+- порожні колекції;
+- межу `value == threshold`;
+- дублікати;
+- статистику;
+- tie-break за датою через `LocalDate`;
+- `n = 0`;
+- `n > size`;
+- `n < 0`;
+- реальне усікання 6 записів до top-5;
+- знайдений `Optional`;
+- `Optional.empty()`;
+- дубльований ключ для `findFirst()`;
+- відсутність мутації;
+- дворівневе групування;
+- всі попередні тести Lab 1–3.
+
+### Контрольний набір з 6 записів
+
+Файл:
+
+```text
+data/lab4-stream-input.csv
+```
+
+Дані:
+
+```text
+Електролічильник-1;2026-10-01;75.00;4.32
+Водомір-1;2026-10-02;120.00;35.20
+Електролічильник-2;2026-10-03;120.00;4.32
+Водомір-2;2026-10-04;80.00;35.20
+Електролічильник-1;2026-10-05;50.00;4.32
+Водомір-3;2026-10-06;30.00;35.20
+```
+
+Поріг:
+
+```text
+75.0
+```
+
+### Фактичні результати
+
+Filter:
+
+```text
+120.0
+120.0
+80.0
+```
+
+Map:
+
+```text
+[75.0, 120.0, 120.0, 80.0, 50.0, 30.0]
+```
+
+Grouping:
+
+```text
+Електролічильник-1 = 125.0
+Водомір-1 = 120.0
+Електролічильник-2 = 120.0
+Водомір-2 = 80.0
+Водомір-3 = 30.0
+```
+
+Statistics:
+
+```text
+count = 6
+sum = 475.0
+min = 30.0
+max = 120.0
+average = 79.166666...
+```
+
+Top-5:
+
+```text
+120.0 | 2026-10-02
+120.0 | 2026-10-03
+80.0  | 2026-10-04
+75.0  | 2026-10-01
+50.0  | 2026-10-05
+```
+
+Запис зі значенням `30.0` відкидається.
+
+Optional:
+
+```text
+Електролічильник-1 -> знайдено
+Водомір-99 -> Optional.empty()
+```
+
+---
+
+## 11. Maven, SpotBugs, JAR і CI
+
+Команди:
+
+```powershell
+.\mvnw.cmd test
+.\mvnw.cmd clean verify
+.\mvnw.cmd package
+```
+
+Фінальний локальний результат:
+
+```text
+Tests run: 79, Failures: 0, Errors: 0, Skipped: 0
+BugInstance size is 0
+Error size is 0
+BUILD SUCCESS
+```
+
+JAR:
+
+```text
+target/lab01-4.0.0.jar
+```
+
+Перевірка:
+
+```powershell
+java -jar target\lab01-4.0.0.jar --version
+```
+
+Результат:
+
+```text
+Version 4.0.0
+```
+
+### Єдине джерело версії
+
+Версія задається лише в:
+
+```text
+pom.xml
+```
+
+Ресурс:
+
+```text
+src/main/resources/version.properties
+```
+
+містить:
+
+```properties
+app.version=${project.version}
+```
+
+`Main` читає версію з ресурсу.
+
+Тести не містять hardcoded версії.
+
+У CI ім'я JAR визначається через:
+
+```text
+project.build.finalName
+```
+
+### GitHub Actions
+
+CI працює на:
+
+| ОС | Результат |
+|---|---|
+| Ubuntu | Success |
+| Windows | Success |
+| macOS | Success |
+
+На кожній ОС виконуються:
+
+- Java 21;
+- Maven Wrapper;
+- `verify`;
+- 79 тестів;
+- SpotBugs;
+- перевірка `--version`;
+- публікація JAR artifact.
+
+Повний matrix-run формує:
+
+```text
+3 JAR artifacts
+```
+### Фінальний CI Lab 4
+
+Фінальний GitHub Actions run для гілки `lab4`:
+
+```text
+https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij/actions/runs/40130894644
+```
+
+Результат:
+
+- статус: `Success`;
+- Ubuntu: `Success`;
+- Windows: `Success`;
+- macOS: `Success`;
+- виконуються 79 тестів;
+- SpotBugs не виявляє дефектів;
+- опубліковано 3 JAR artifacts.
+
+Фінальний CI run:
+
+[GitHub Actions — Lab 4, run #47](https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij/actions/runs/40130894644)
+
+JAR artifacts доступні на сторінці цього CI run у секції `Artifacts`.
+---
+
+## 12. GitHub Issues і Pull Request
+
+Для Lab 4 створено:
+
+| Issue | Зміст |
+|---|---|
+| `#17` | `filter`, `map`, `groupingBy` |
+| `#18` | statistics, top-N, `Optional`, тести |
+| `#19` | Maven, JAR, автоматичне версіонування |
+| `#20` | CI, документація та реліз |
+
+Робоча гілка:
+
+```text
+lab4
+```
+
+Фінальний PR:
+
+```text
+lab4 -> main
+```
+
+У його описі:
+
+```text
+Closes #17
+Closes #18
+Closes #19
+Closes #20
+```
+
+Після merge створюється тег:
+
+```text
+v4.0.0
+```
+
+---
+
+## 13. Порівняння реалізацій і додаткові завдання
+
+Stream API дозволив прибрати ручне накопичення зовнішнього змінного стану.
+
+Наприклад:
+
+```java
+readings.stream()
+        .mapToDouble(UtilityReading::calculateCost)
+        .sum();
+```
+
+є коротшим і декларативнішим за цикл із ручною змінною `totalCost`.
+
+Для простих операцій складність залишається:
+
+```text
+O(n)
+```
+
+Для `top-N` через повне сортування:
+
+```text
+O(n log n)
+```
+
+Stream API не гарантує більшої швидкості, але робить код простішим для читання та комбінування.
+
+### Дворівневе groupingBy ⭐
+
+Реалізовано:
+
+```java
+Map<UtilityKind, Map<String, Double>>
+```
+
+через:
+
+```java
+Collectors.groupingBy(
+        UtilityReading::getKind,
+        Collectors.groupingBy(
+                UtilityReading::getMeter,
+                Collectors.summingDouble(UtilityReading::getValue)
+        )
+)
+```
+
+Перший рівень — `UtilityKind`, другий — `meter`.
+
+### Відсутність мутації ⭐
+
+Окремий тест доводить, що Stream-запити не змінюють порядок або склад вхідної колекції.
+
+### Чому не parallelStream
+
+Для невеликого набору даних `parallelStream()` не використовується, оскільки витрати на паралельне виконання можуть бути більшими за виграш.
+
+---
+
+## 14. Академічна доброчесність
+
+Під час виконання роботи використовувався ChatGPT як допоміжний інструмент.
+
+ШІ використовувався для:
+
+- аналізу методичних вимог;
+- планування Issues;
+- пояснення Stream API;
+- перевірки comparator;
+- підбору граничних тестів;
+- Maven і GitHub Actions;
+- автоматичного версіонування;
+- перевірки README і REPORT.
+
+Прийняті рекомендації:
+
+- винести запити до `UtilityReadingQueries`;
+- використовувати `filter`, `map`, collectors та `Optional`;
+- використовувати `LocalDate` для другого критерію top-N;
+- додати nested `groupingBy`;
+- перевірити відсутність мутації;
+- зробити `pom.xml` єдиним джерелом версії.
+
+Відхилені або скориговані пропозиції
+
+- не використовувався `parallelStream()`, оскільки для малого навчального набору немає доведеного виграшу продуктивності;
+- не замінювався цикл читання CSV на Stream API, оскільки він відповідає за нумерацію рядків та незалежну обробку помилок;
+- поле `date` не перебудовувалося повністю з `String` на `LocalDate`, щоб не ламати API попередніх лабораторних робіт; для хронологічного сортування дата перетворюється через `LocalDate.parse()` у comparator;
+- початковий варіант Lab 4 залишав цикл агрегування у `Main`; перед фінальною версією його замінено на `DoubleSummaryStatistics` та `mapToDouble(...).sum()`.
+
+Усі зміни запускалися та перевірялися автором роботи через JUnit, Maven, SpotBugs, JAR та GitHub Actions.
+
+---
+
+## 15. Відповіді на контрольні питання
+
+### 1. Що таке Stream API?
+
+Stream API — це засіб Java для декларативної обробки послідовності даних. Stream не зберігає елементи самостійно.
+
+### 2. З чого складається pipeline?
+
+З джерела, проміжних операцій та термінальної операції.
+
+```text
+source -> filter/map -> terminal operation
+```
+
+### 3. Чому проміжні операції lazy?
+
+Вони не виконують повну обробку до виклику термінальної операції.
+
+### 4. Для чого `filter()`?
+
+Для відбору елементів, які відповідають умові.
+
+### 5. `map()` і `mapToDouble()`?
+
+`map()` повертає об'єктний stream, а `mapToDouble()` — `DoubleStream` із числовими операціями.
+
+### 6. Для чого `distinct()`?
+
+Для видалення дублікатів відповідно до `equals()` і `hashCode()`.
+
+### 7. Чому `sorted()` має бути перед `limit()`?
+
+Інакше будуть відсортовані лише перші елементи джерела, а не весь набір.
+
+### 8. Що таке terminal operation?
+
+Операція, яка запускає pipeline та повертає кінцевий результат, наприклад `toList()`, `collect()`, `sum()`.
+
+### 9. Для чого `Collectors.joining()`?
+
+Для об'єднання текстових елементів stream в один рядок.
+
+### 10. Що робить `groupingBy()`?
+
+Створює `Map`, групуючи елементи за заданим ключем.
+
+### 11. Що таке downstream collector?
+
+Collector, який визначає спосіб обробки елементів усередині кожної групи.
+
+### 12. Що містить `DoubleSummaryStatistics`?
+
+`count`, `sum`, `min`, `max`, `average`.
+
+### 13. Що відбувається для порожньої статистики?
+
+```text
+count = 0
+sum = 0
+average = 0
+min = +Infinity
+max = -Infinity
+```
+
+### 14. Як утворюється складений comparator?
+
+Через основний comparator і `thenComparing()`.
+
+У роботі:
+
+```java
+Comparator.comparingDouble(UtilityReading::getValue)
+        .reversed()
+        .thenComparing(
+                reading -> LocalDate.parse(reading.getDate())
+        );
+```
+
+### 15. Чому важливе місце `reversed()`?
+
+Воно повинно розвертати лише основний критерій. Якщо застосувати його після `thenComparing`, розвернуться обидва критерії.
+
+### 16. Для чого `Optional`?
+
+Щоб явно показати, що результат пошуку може бути відсутнім, без використання `null`.
+
+### 17. Різниця між `orElse`, `orElseThrow`, `ifPresent`?
+
+- `orElse` — запасне значення;
+- `orElseThrow` — виняток;
+- `ifPresent` — дія лише при наявності значення.
+
+### 18. Чому не варто додавати елементи у зовнішній mutable список через `forEach()`?
+
+Це створює побічний ефект і погіршує декларативність Stream API. Краще використовувати `toList()` або collector.
+
+### 19. Що потрібно зберегти під час рефакторингу циклу?
+
+Умови, порядок, обробку дублікатів, агрегати, порожні випадки та зовнішній результат.
+
+### 20. Коли `parallelStream()` може бути виправданим?
+
+Для великого набору даних і незалежних дорогих обчислень, якщо вимірювання показують реальний приріст продуктивності.
+
+---
+
+## 16. Висновки
+
+У Lab 4 реалізовано всі обов'язкові Stream API запити:
+
+- `filterAboveThreshold()`;
+- `consumptionValues()`;
+- `sumByMeter()`;
+- `valueStatistics()`;
+- `topByValue()`;
+- `findByMeter()` через `Optional`.
+
+Основні обчислення в `Main` переведено з циклу на Stream API.
+
+Додатково реалізовано:
+
+- `LocalDate` для другого критерію top-N;
+- контрольний набір із 6 записів;
+- тест `n < 0`;
+- тест реального top-5 із 6 записів;
+- дворівневе `groupingBy` ⭐;
+- тест відсутності мутації ⭐;
+- автоматичне версіонування через Maven.
+
+Фінальний результат:
+
+```text
+Tests run: 79, Failures: 0, Errors: 0, Skipped: 0
+BugInstance size is 0
+Error size is 0
+BUILD SUCCESS
+```
+
+Контрольний звіт Lab 3 збережено без змін.
+
+GitHub Actions успішно працює на Ubuntu, Windows і macOS та формує 3 JAR artifacts.
+
+Фінальний цикл завершується:
+
+```text
+Pull Request lab4 -> main
+merge
+tag v4.0.0
+```
