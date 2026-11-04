@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.time.LocalDate;
 
 import org.junit.jupiter.api.Test;
+import java.util.List;
 
 /**
  * Tests UtilityReadingRecord.
@@ -103,4 +104,62 @@ class UtilityReadingRecordTest {
                 )
         );
     }
+
+    @Test
+void restoresRecordFromCsvFields() throws Exception {
+    UtilityReadingRecord record =
+            UtilityReadingRecord.fromCsvFields(
+                    List.of(
+                            "2026-11-04",
+                            "Електролічильник-1",
+                            "4.32",
+                            "120.5"
+                    )
+            );
+
+    assertEquals(
+            new UtilityReadingRecord(
+                    "Електролічильник-1",
+                    LocalDate.of(2026, 11, 4),
+                    120.5,
+                    4.32
+            ),
+            record
+    );
+}
+
+@Test
+void rejectsWrongCsvFieldCount() {
+    assertThrows(
+            DataStorageException.class,
+            () -> UtilityReadingRecord.fromCsvFields(
+                    List.of(
+                            "2026-11-04",
+                            "Електролічильник-1",
+                            "4.32"
+                    )
+            )
+    );
+}
+
+@Test
+void rejectsInvalidCsvNumberAndPreservesCause() {
+    DataStorageException exception =
+            assertThrows(
+                    DataStorageException.class,
+                    () -> UtilityReadingRecord.fromCsvFields(
+                            List.of(
+                                    "2026-11-04",
+                                    "Електролічильник-1",
+                                    "wrong-number",
+                                    "120.5"
+                            )
+                    )
+            );
+
+    assertEquals(
+            NumberFormatException.class,
+            exception.getCause().getClass()
+    );
+}
 }

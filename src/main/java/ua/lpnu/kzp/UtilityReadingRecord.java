@@ -100,6 +100,51 @@ public final class UtilityReadingRecord {
         return tariff;
     }
 
+    /**
+ * Restores a utility reading record from CSV fields.
+ *
+ * @param fields CSV fields in deterministic exporter order:
+ *               date, meter, tariff, value
+ * @return restored utility reading record
+ * @throws DataStorageException if field count or field values are invalid
+ */
+public static UtilityReadingRecord fromCsvFields(
+        java.util.List<String> fields)
+        throws DataStorageException {
+
+    if (fields == null) {
+        throw new DataStorageException(
+                "CSV fields must not be null"
+        );
+    }
+
+    if (fields.size() != 4) {
+        throw new DataStorageException(
+                "expected 4 CSV fields but got "
+                        + fields.size()
+        );
+    }
+
+    try {
+        LocalDate date = LocalDate.parse(fields.get(0));
+        String meter = fields.get(1);
+        double tariff = Double.parseDouble(fields.get(2));
+        double value = Double.parseDouble(fields.get(3));
+
+        return new UtilityReadingRecord(
+                meter,
+                date,
+                value,
+                tariff
+        );
+    } catch (RuntimeException exception) {
+        throw new DataStorageException(
+                "invalid utility reading CSV values",
+                exception
+        );
+    }
+}
+
     @Override
     public boolean equals(Object object) {
         if (this == object) {

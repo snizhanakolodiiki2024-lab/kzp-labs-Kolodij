@@ -5,6 +5,7 @@ import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -48,26 +49,31 @@ public final class CsvExporter {
 
         String header = fields.stream()
                 .map(field -> field.getAnnotation(CsvColumn.class).value())
+                .map(CsvExporter::escape)
                 .collect(Collectors.joining(","));
 
         StringBuilder csv = new StringBuilder(header)
                 .append(System.lineSeparator());
 
-        try {
-            for (T record : records) {
-                Objects.requireNonNull(
-                        record,
-                        "record must not be null"
+        for (T record : records) {
+            Objects.requireNonNull(
+                    record,
+                    "record must not be null"
+            );
+
+            List<String> values = new ArrayList<>();
+
+            for (Field field : fields) {
+                values.add(
+                        escape(readField(field, record))
                 );
-
-                String row = fields.stream()
-                        .map(field -> readField(field, record))
-                        .collect(Collectors.joining(","));
-
-                csv.append(row)
-                        .append(System.lineSeparator());
             }
 
+            csv.append(String.join(",", values))
+                    .append(System.lineSeparator());
+        }
+
+        try {
             Files.writeString(
                     path,
                     csv.toString(),
@@ -101,15 +107,41 @@ public final class CsvExporter {
         return fields;
     }
 
-    private static String readField(Field field, Object record) {
+    private static String readField(
+            Field field,
+            Object record)
+            throws DataStorageException {
+
         try {
             Object value = field.get(record);
-            return value == null ? "" : value.toString();
+
+            return value == null
+                    ? ""
+                    : value.toString();
         } catch (IllegalAccessException exception) {
-            throw new IllegalStateException(
+            throw new DataStorageException(
                     "cannot read field: " + field.getName(),
                     exception
             );
         }
+    }
+
+    private static String escape(String value) {
+        boolean requiresQuotes =
+                value.contains(",")
+                        || value.contains("\"")
+                        || value.contains("\n")
+                        || value.contains("\r");
+
+        String escaped = value.replace(
+                "\"",
+                "\"\""
+        );
+
+        if (requiresQuotes) {
+            return "\"" + escaped + "\"";
+        }
+
+        return escaped;
     }
 }
