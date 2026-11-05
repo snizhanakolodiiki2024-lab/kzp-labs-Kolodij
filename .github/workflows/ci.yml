@@ -62,10 +62,15 @@ jobs:
           CI_BUILD_NUMBER: ${{ github.run_number }}
         run: java -jar target/${{ env.JAR_NAME }} --version
 
-      - name: Upload JAR
+      - name: Generate Lab5 CSV
+        run: java -jar target/${{ env.JAR_NAME }} --export-csv out/lab5-readings.csv
+
+      - name: Upload Lab5 artifacts
         if: success()
         uses: actions/upload-artifact@v7
         with:
-          name: jar-${{ matrix.os }}-${{ github.run_number }}
-          path: target/${{ env.JAR_NAME }}
+          name: lab5-${{ matrix.os }}-${{ github.run_number }}
+          path: |
+            target/${{ env.JAR_NAME }}
+            out/lab5-readings.csv
           if-no-files-found: error
