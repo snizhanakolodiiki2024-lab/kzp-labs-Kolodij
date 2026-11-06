@@ -109,7 +109,7 @@ public final class JsonExporter<T> implements Exporter<T> {
             );
         } catch (IOException exception) {
             throw new DataStorageException(
-                    "failed to write JSON file",
+                    "failed to write JSON file: " + path,
                     exception
             );
         }

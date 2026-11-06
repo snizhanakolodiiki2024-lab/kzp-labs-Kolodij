@@ -38,7 +38,7 @@ public final class CsvParser {
             return parse(csv);
         } catch (IOException exception) {
             throw new DataStorageException(
-                    "failed to read CSV file",
+                    "failed to read CSV file: " + path,
                     exception
             );
         }

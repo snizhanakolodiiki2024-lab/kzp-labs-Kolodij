@@ -1348,7 +1348,7 @@ v4.0.0
 
 ## Основні зміни
 
-У Lab 5 реалізовано параметризоване сховище даних, власний тип винятку, CSV-анотацію, універсальний exporter через Reflection API та зворотне читання CSV.
+У Lab 5 реалізовано параметризоване сховище, власний виняток, CSV-анотацію, універсальний exporter через Reflection API, CSV-імпорт і перевірку round-trip.
 
 Створено:
 
@@ -1357,19 +1357,22 @@ Repository<T>
 DataStorageException
 CsvColumn
 UtilityReadingRecord
-CsvExporter
+Exporter<T>
+CsvExporter<T>
 CsvParser
+JsonExporter<T>
+ExportFieldCache
 ```
 
 ## Repository<T>
 
-Для зберігання об'єктів створено:
+Для зберігання даних використовується:
 
 ```java
 Repository<T>
 ```
 
-Реалізовано методи:
+Основні методи:
 
 ```java
 add(T item)
@@ -1377,30 +1380,17 @@ all()
 find(Predicate<? super T> condition)
 ```
 
-Метод `all()` повертає immutable snapshot.
-
-У `Main` замість прямого використання `List<UtilityReading>` як сховища використовується:
+`all()` повертає immutable snapshot через:
 
 ```java
-Repository<UtilityReading>
+List.copyOf(items)
 ```
 
-## CSV та Reflection
+Raw types не використовуються.
 
-Створено анотацію:
+## UtilityReadingRecord
 
-```java
-@CsvColumn
-```
-
-з параметрами:
-
-```java
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-```
-
-Для CSV використовується клас:
+Для Lab 5 створено модель:
 
 ```java
 UtilityReadingRecord
@@ -1415,84 +1405,92 @@ double value
 double tariff
 ```
 
-Позначені `@CsvColumn`.
+Ключ round-trip:
 
-`CsvExporter` через Reflection API знаходить анотовані поля та формує CSV.
+```text
+meter + date
+```
 
-Порядок колонок:
+Перевіряються:
+
+- `null`;
+- blank `meter`;
+- від'ємні значення;
+- `NaN`;
+- `Infinity`;
+- `-Infinity`.
+
+Реалізовано:
+
+```java
+equals()
+hashCode()
+fromCsv(String)
+fromCsvFields(List<String>)
+```
+
+## @CsvColumn та Reflection API
+
+Створено анотацію:
+
+```java
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
+public @interface CsvColumn
+```
+
+Поля моделі позначені:
+
+```text
+meter  -> лічильник
+date   -> дата
+value  -> значення
+tariff -> тариф
+```
+
+Exporter знаходить поля через Reflection API.
+
+Порядок визначається сортуванням Java-імен полів:
+
+```text
+date
+meter
+tariff
+value
+```
+
+Фактичний CSV header:
 
 ```text
 дата,лічильник,тариф,значення
 ```
 
-## CSV escaping
+## CSV та UTF-8
 
-Реалізовано коректну обробку:
+CSV записується і читається через:
 
-- ком;
+```java
+Path
+Files
+StandardCharsets.UTF_8
+```
+
+Підтримується escaping:
+
+- коми;
 - подвійних лапок;
-- переносів рядка;
+- `LF`;
+- `CRLF`;
 - multiline fields.
 
-Подвійні лапки всередині значення подвоюються.
-
-Приклад:
+Приклад складного значення:
 
 ```text
 Лічильник, "нічний"
 резервний
 ```
 
-коректно записується в CSV як quoted multiline field.
-
-## CsvParser
-
-Для читання CSV створено:
-
-```java
-CsvParser
-```
-
-Parser підтримує:
-
-- звичайні поля;
-- quoted fields;
-- коми всередині поля;
-- escaped quotes;
-- multiline fields;
-- `LF`;
-- `CRLF`.
-
-Для розбору CSV не використовується:
-
-```java
-split(",")
-```
-
-оскільки такий підхід некоректно працює з quoted fields.
-
-## UTF-8
-
-Запис CSV виконується через:
-
-```java
-Files.writeString(
-        path,
-        csv,
-        StandardCharsets.UTF_8
-);
-```
-
-Читання CSV:
-
-```java
-Files.readString(
-        path,
-        StandardCharsets.UTF_8
-);
-```
-
-Таким чином кодування UTF-8 задається явно.
+Коректно експортується та відновлюється після читання CSV.
 
 ## Round-trip
 
@@ -1501,32 +1499,44 @@ Files.readString(
 ```text
 UtilityReadingRecord
         ↓
+Repository<T>
+        ↓
 CsvExporter
         ↓
-CSV
+UTF-8 CSV
         ↓
 CsvParser
         ↓
-UtilityReadingRecord
-```
-
-Після експорту та повторного читання об'єкти порівнюються через:
-
-```java
+UtilityReadingRecord.fromCsvFields()
+        ↓
 equals()
 ```
 
-Round-trip успішно працює також для поля з комою, лапками та переносом рядка.
+Створюється 5 записів.
+
+Один запис містить одночасно:
+
+```text
+comma + quotes + newline
+```
+
+Після повторного читання:
+
+```text
+5 початкових об'єктів
+=
+5 відновлених об'єктів
+```
 
 ## DataStorageException
 
-Для помилок роботи зі сховищем та CSV створено:
+Для помилок CSV, файлів і reflection використовується:
 
 ```java
 DataStorageException
 ```
 
-Початкова причина помилки зберігається через:
+Початкова причина зберігається через:
 
 ```java
 Throwable cause
@@ -1534,45 +1544,106 @@ Throwable cause
 
 Перевірено:
 
-- неправильну кількість CSV-полів;
+- неправильну кількість полів;
 - неправильне число;
+- неправильну дату;
 - некоректний CSV;
 - незакриті лапки;
 - відсутній файл;
-- помилку запису файла;
+- помилку запису;
+- клас без `@CsvColumn`;
 - збереження `cause`.
 
-## Запуск CSV-режиму
+Повідомлення файлової помилки містить шлях до файла.
 
-Створення демонстраційного CSV:
+## Додаткове завдання ⭐
+
+Створено спільний контракт:
+
+```java
+Exporter<T>
+```
+
+Через нього працюють:
+
+```java
+CsvExporter<T>
+JsonExporter<T>
+```
+
+JSON використовує ті самі поля з:
+
+```java
+@CsvColumn
+```
+
+Запуск JSON-експорту:
 
 ```powershell
-java -jar target\lab01-5.0.0.jar --export-csv out\lab5-readings.csv
+java -jar target\lab01-5.0.0.jar --export-json out\lab5-readings.json
+```
+
+Створюється:
+
+```text
+out/lab5-readings.json
+```
+
+### Reflection cache ⭐
+
+Створено:
+
+```java
+ExportFieldCache
+```
+
+Список reflection-полів кешується для кожного класу.
+
+Фактичне вимірювання:
+
+```text
+Reflection without cache: 38697200 ns
+Reflection with cache:    1120900 ns
+```
+
+Також виконано порівняння повного CSV-експорту на:
+
+```text
+1000 записів
+50 експортів
 ```
 
 Результат:
 
 ```text
-CSV створено: out\lab5-readings.csv
-Кількість записів: 5
-Round-trip перевірка: успішно
+CSV export without cache: 61432100 ns
+CSV export with cache:    50609400 ns
+CSV export cache ratio:   1.21x
 ```
 
-Створюється файл:
+Обидва способи створили однаковий CSV.
 
-```text
-out/lab5-readings.csv
+## Запуск
+
+CSV:
+
+```powershell
+java -jar target\lab01-5.0.0.jar --export-csv out\lab5-readings.csv
 ```
 
-## Сумісність із Lab 4
+JSON:
 
-Попередній режим запуску збережено:
+```powershell
+java -jar target\lab01-5.0.0.jar --export-json out\lab5-readings.json
+```
+
+Попередній режим також збережено:
 
 ```powershell
 java -jar target\lab01-5.0.0.jar --input data\input.csv --output out\report.txt
 ```
 
-Контрольний результат залишився без змін:
+Контрольний результат:
 
 ```text
 Результати:
@@ -1593,7 +1664,7 @@ java -jar target\lab01-5.0.0.jar --input data\input.csv --output out\report.txt
 Після Lab 5:
 
 ```text
-Tests run: 112, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 121, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
@@ -1601,21 +1672,27 @@ BUILD SUCCESS
 
 - `Repository<T>`;
 - immutable snapshot;
-- `find()`;
+- `find(Predicate<? super T>)`;
 - `DataStorageException`;
 - `@CsvColumn`;
 - Reflection API;
 - CSV header;
 - UTF-8;
-- comma escaping;
-- quote escaping;
+- CSV escaping;
 - multiline fields;
 - `LF` і `CRLF`;
 - порожній CSV;
 - неправильну кількість полів;
-- неправильне число;
+- неправильні числа;
+- `fromCsv()`;
+- `NaN` та Infinity;
 - файлові помилки;
-- round-trip;
+- `cause`;
+- CSV round-trip;
+- JSON exporter;
+- спільний `Exporter<T>`;
+- reflection cache;
+- export benchmark;
 - усі попередні тести Lab 1–4.
 
 ## Maven, SpotBugs і JAR
@@ -1638,10 +1715,10 @@ BUILD SUCCESS
 .\mvnw.cmd package
 ```
 
-Результат:
+Фінальний локальний результат:
 
 ```text
-Tests run: 112, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 121, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
@@ -1651,57 +1728,33 @@ JAR:
 target/lab01-5.0.0.jar
 ```
 
-Перевірка версії:
-
-```powershell
-java -jar target\lab01-5.0.0.jar --version
-```
-
-Результат:
-
-```text
-Version 5.0.0
-```
-
 ## GitHub Actions
 
-CI запускається на трьох ОС:
+CI налаштовано на:
 
-| ОС | Результат |
-| --- | --- |
-| Ubuntu | Success |
-| Windows | Success |
-| macOS | Success |
+| ОС | Перевірка |
+|---|---|
+| Ubuntu | `verify` |
+| Windows | `verify` |
+| macOS | `verify` |
 
-На кожній ОС:
+На кожній ОС виконуються:
 
 - Java 21;
 - Maven Wrapper;
-- `verify`;
-- 112 тестів;
+- 121 тест;
 - SpotBugs;
 - перевірка версії;
 - створення CSV;
-- round-trip перевірка;
-- завантаження artifacts.
-
-Успішний CI run:
-
-```text
-#58
-```
-
-Створено:
-
-```text
-3 artifacts
-```
+- створення JSON;
+- публікація artifacts.
 
 Кожний artifact містить:
 
 ```text
 lab01-5.0.0.jar
 lab5-readings.csv
+lab5-readings.json
 ```
 
 ## GitHub Issues
@@ -1709,11 +1762,11 @@ lab5-readings.csv
 Для Lab 5 створено:
 
 | Issue | Зміст |
-| --- | --- |
+|---|---|
 | `#22` | `Repository<T>` та `DataStorageException` |
 | `#23` | `UtilityReadingRecord` та `@CsvColumn` |
-| `#24` | `CsvExporter`, Reflection, UTF-8 та CSV escaping |
-| `#25` | `CsvParser`, round-trip та тести |
+| `#24` | reflective exporter, UTF-8 та CSV escaping |
+| `#25` | parser, round-trip та автоматизовані тести |
 | `#26` | CI, документація та реліз |
 
 У фінальному Pull Request:
@@ -1731,24 +1784,26 @@ Closes #26
 У Lab 5:
 
 - створено `Repository<T>`;
-- додано `DataStorageException`;
+- реалізовано власний `DataStorageException`;
 - створено `UtilityReadingRecord`;
 - додано `@CsvColumn`;
-- реалізовано універсальний `CsvExporter`;
-- використано Reflection API;
-- реалізовано CSV escaping;
-- реалізовано `CsvParser`;
+- реалізовано універсальний reflective CSV exporter;
+- реалізовано CSV parser;
+- реалізовано `fromCsv()`;
 - використано explicit UTF-8;
-- реалізовано round-trip;
-- створюється CSV із 5 записами;
+- реалізовано CSV round-trip;
 - збережено функціональність Lab 1–4;
-- кількість тестів збільшено з 79 до 112;
-- `verify` і `package` проходять успішно;
+- додано JSON exporter ⭐;
+- створено спільний `Exporter<T>` ⭐;
+- реалізовано reflection field cache ⭐;
+- виміряно ефект кешування ⭐;
+- кількість тестів збільшено з 79 до 121;
+- `verify` і SpotBugs проходять успішно;
 - версію оновлено до `5.0.0`;
-- CI успішно працює на Ubuntu, Windows і macOS;
-- створюються 3 artifacts із JAR та CSV.
+- CI налаштовано для Ubuntu, Windows і macOS;
+- artifacts містять JAR, CSV та JSON.
 
-Фінальний Git-тег:
+Фінальний Git-тег після завершення роботи:
 
 ```text
 v5.0.0

@@ -2356,19 +2356,24 @@ merge
 tag v4.0.0
 ```
 
-````markdown
+
 # Лабораторна робота №5
 
-## 1. Загальна інформація
+## 1. Тема, номер роботи та варіант
 
-- **Дисципліна:** Кросплатформні засоби програмування
-- **Тема:** Параметризоване сховище, винятки й CSV-експорт у Java-проєкті
-- **Варіант:** №9
-- **Предметна область:** комунальні показники
-- **Java:** 21
-- **ОС:** Windows
-- **Гілка:** `lab5`
-- **Версія:** `5.0.0`
+**Тема:** Параметризоване сховище, винятки й CSV-експорт у Java-проєкті.
+
+**Дисципліна:** Кросплатформні засоби програмування.
+
+**Варіант:** №9 — комунальні показники.
+
+**Операційна система:** Windows.
+
+**Java:** 21.
+
+**Версія:** `5.0.0`.
+
+**Робоча гілка:** `lab5`.
 
 Репозиторій:
 
@@ -2376,76 +2381,114 @@ tag v4.0.0
 https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij
 ```
 
+Клас варіанта:
+
+```java
+UtilityReadingRecord
+```
+
+Поля:
+
+```text
+meter  -> String
+date   -> LocalDate
+value  -> double
+tariff -> double
+```
+
+Ключ round-trip:
+
+```text
+meter + date
+```
+
 ---
 
 ## 2. Мета роботи
 
-Мета роботи — розширити Java-проєкт параметризованим сховищем даних, власним типом винятку, CSV-анотаціями, універсальним exporter-ом через Reflection API та зворотним читанням CSV.
+Мета роботи — завершити Java-застосунок наскрізного продукту: замінити пряме зберігання даних у списку на параметризоване сховище, додати власний виняток із ланцюгом причин, описати CSV-стовпці анотацією та реалізувати універсальний експортер через Reflection API.
 
-Необхідно було зберегти предметну модель і результати попередніх лабораторних робіт та реалізувати повний цикл:
+У результаті реалізовано повний цикл:
 
 ```text
-об'єкт
+об'єкти
 ↓
 Repository<T>
 ↓
-CSV export
+@CsvColumn
 ↓
-UTF-8 файл
+CsvExporter
 ↓
-CSV parse
+UTF-8 CSV
 ↓
-відновлений об'єкт
+CsvParser
+↓
+UtilityReadingRecord
+↓
+equals()
 ```
 
-Коректність циклу перевіряється через `equals()`.
+Також виконано додаткове завдання ⭐:
+
+```text
+Exporter<T>
+├── CsvExporter<T>
+└── JsonExporter<T>
+```
+
+та кешування reflection-полів.
 
 ---
 
 ## 3. Стан до і після Lab 5
 
-До Lab 5 коректні записи в `Main` зберігалися безпосередньо у:
-
-```java
-List<UtilityReading>
-```
-
-Після Lab 5 використовується параметризоване сховище:
-
-```java
-Repository<UtilityReading>
-```
-
-Для CSV-підсистеми створено окремий тип:
-
-```java
-UtilityReadingRecord
-```
-
-та сховище:
-
-```java
-Repository<UtilityReadingRecord>
-```
-
-Основні нові компоненти:
-
-```text
-Repository<T>
-DataStorageException
-CsvColumn
-UtilityReadingRecord
-CsvExporter
-CsvParser
-```
-
-Попередня поліморфна модель збережена:
+До Lab 5 програма використовувала поліморфну модель:
 
 ```text
 UtilityReading
 ├── ElectricityReading
 └── WaterReading
 ```
+
+та виконувала Stream API-запити над:
+
+```java
+List<UtilityReading>
+```
+
+Після Lab 5 пряме сховище замінено на:
+
+```java
+Repository<UtilityReading>
+```
+
+Для персистентного CSV-представлення створено:
+
+```java
+UtilityReadingRecord
+```
+
+і:
+
+```java
+Repository<UtilityReadingRecord>
+```
+
+Додано:
+
+```text
+Repository<T>
+DataStorageException
+CsvColumn
+UtilityReadingRecord
+CsvExporter<T>
+CsvParser
+Exporter<T>
+JsonExporter<T>
+ExportFieldCache
+```
+
+Попередня модель, Stream API та формат текстового звіту не видалені.
 
 ---
 
@@ -2457,6 +2500,24 @@ UtilityReading
 Repository<T>
 ```
 
+Параметр:
+
+```text
+T
+```
+
+визначає тип об'єктів, які може зберігати конкретний repository.
+
+Наприклад:
+
+```java
+Repository<UtilityReadingRecord>
+```
+
+приймає об'єкти `UtilityReadingRecord`.
+
+Raw types не використовуються.
+
 Основні методи:
 
 ```java
@@ -2467,72 +2528,108 @@ List<T> all()
 List<T> find(Predicate<? super T> condition)
 ```
 
-`add()` додає об'єкт до сховища та не дозволяє додати `null`.
+### add()
 
-`all()` повертає immutable snapshot через:
+Додає запис та не дозволяє передати `null`.
+
+### all()
+
+Повертає immutable snapshot:
 
 ```java
-List.copyOf(items)
+return List.copyOf(items);
 ```
 
-Тому подальші зміни repository не змінюють уже отриманий список.
+Тому зовнішній код не може змінити внутрішній список repository.
 
-`find()` дозволяє виконувати пошук за довільною умовою:
+### find()
+
+Пошук виконується за:
 
 ```java
 Predicate<? super T>
 ```
 
-Raw types не використовуються.
+Приклад:
+
+```java
+repository.find(
+        record -> record.getValue() > 50.0
+);
+```
+
+`? super T` дозволяє передати predicate для типу `T` або його супертипу.
 
 ---
 
-## 5. UtilityReadingRecord
+## 5. Модель даних UtilityReadingRecord
 
-Для CSV-зберігання створено:
+Клас:
 
 ```java
 UtilityReadingRecord
 ```
 
-Поля:
+містить:
+
+| Поле | Тип | Призначення |
+|---|---|---|
+| `meter` | `String` | назва лічильника |
+| `date` | `LocalDate` | дата показника |
+| `value` | `double` | значення споживання |
+| `tariff` | `double` | тариф |
+
+Основні інваріанти:
+
+- `meter != null`;
+- `meter` не blank;
+- `date != null`;
+- `value >= 0`;
+- `tariff >= 0`;
+- `value` має бути скінченним;
+- `tariff` має бути скінченним.
+
+Для перевірки чисел використовується:
 
 ```java
-String meter
-LocalDate date
-double value
-double tariff
+Double.isFinite(...)
 ```
 
-Ключ запису:
+Тому відхиляються:
 
 ```text
-meter + date
+NaN
+Infinity
+-Infinity
 ```
 
-Основні правила:
-
-- `meter` не може бути `null` або blank;
-- `date` не може бути `null`;
-- `value >= 0`;
-- `tariff >= 0`.
-
-Для логічної рівності реалізовано:
+Реалізовано:
 
 ```java
 equals()
 hashCode()
 ```
 
-Для відновлення з CSV використовується:
+Рівність враховує всі чотири поля:
+
+```text
+meter
+date
+value
+tariff
+```
+
+Для імпорту реалізовано:
 
 ```java
-UtilityReadingRecord.fromCsvFields(...)
+UtilityReadingRecord.fromCsv(String)
+
+UtilityReadingRecord.fromCsvFields(List<String>)
 ```
 
 ---
 
-## 6. Анотація @CsvColumn
+## 6. @CsvColumn
 
 Створено власну анотацію:
 
@@ -2544,11 +2641,11 @@ public @interface CsvColumn {
 }
 ```
 
-`RetentionPolicy.RUNTIME` дозволяє читати анотацію через Reflection API під час виконання програми.
+`RetentionPolicy.RUNTIME` означає, що annotation доступна під час виконання програми.
 
 `ElementType.FIELD` дозволяє застосовувати її до полів.
 
-Поля `UtilityReadingRecord` позначені:
+Поля моделі:
 
 ```java
 @CsvColumn("лічильник")
@@ -2564,33 +2661,13 @@ private final double value;
 private final double tariff;
 ```
 
----
+Exporter не містить hardcoded назв CSV-стовпців.
 
-## 7. Reflective CsvExporter
-
-Створено універсальний клас:
+Назви беруться лише з:
 
 ```java
-CsvExporter
+@CsvColumn
 ```
-
-Exporter не містить умов для конкретного доменного класу.
-
-Тип передається через:
-
-```java
-Class<T>
-```
-
-Через Reflection API exporter:
-
-1. отримує поля класу;
-2. знаходить поля з `@CsvColumn`;
-3. читає назви колонок;
-4. отримує значення полів;
-5. формує CSV header;
-6. формує рядки даних;
-7. записує CSV у файл.
 
 Поля сортуються за Java-іменами:
 
@@ -2601,7 +2678,7 @@ tariff
 value
 ```
 
-Тому заголовок має стабільний порядок:
+Тому фактичний порядок CSV:
 
 ```text
 дата,лічильник,тариф,значення
@@ -2609,28 +2686,55 @@ value
 
 ---
 
-## 8. CSV escaping та UTF-8
+## 7. Рефлексивний експортер
 
-Реалізовано обробку:
+Основний CSV exporter:
 
-- ком;
-- подвійних лапок;
-- `\n`;
-- `\r`;
-- multiline fields.
-
-Якщо значення містить спеціальний символ, воно береться в подвійні лапки.
-
-Подвійна лапка всередині поля подвоюється.
-
-Наприклад:
-
-```text
-Лічильник, "нічний"
-резервний
+```java
+CsvExporter<T>
 ```
 
-коректно зберігається як quoted multiline CSV field.
+працює з довільним класом, поля якого позначені:
+
+```java
+@CsvColumn
+```
+
+Тип класу передається окремо:
+
+```java
+Class<T>
+```
+
+Це потрібно також для порожнього списку, оскільки exporter має сформувати header навіть тоді, коли першого об'єкта немає.
+
+Reflection API використовується для:
+
+1. отримання declared fields;
+2. пошуку `@CsvColumn`;
+3. сортування полів;
+4. перевірки доступу через `trySetAccessible()`;
+5. читання значень;
+6. формування header;
+7. формування рядків CSV.
+
+Exporter не містить:
+
+```java
+if (type == UtilityReadingRecord.class)
+```
+
+або перевірок конкретних підтипів.
+
+Якщо клас не має анотованих полів, виникає:
+
+```text
+DataStorageException: class has no CSV fields
+```
+
+---
+
+## 8. Формат CSV
 
 Запис виконується через:
 
@@ -2642,9 +2746,18 @@ Files.writeString(
 );
 ```
 
-Кодування задається явно як UTF-8.
+Читання:
 
-Приклад створеного файла:
+```java
+Files.readString(
+        path,
+        StandardCharsets.UTF_8
+);
+```
+
+Таким чином UTF-8 задається явно і під час запису, і під час читання.
+
+### Повний створений CSV
 
 ```text
 дата,лічильник,тариф,значення
@@ -2656,85 +2769,133 @@ Files.writeString(
 резервний",5.1,42.75
 ```
 
-Останній логічний запис займає два фізичні рядки через перенос рядка всередині quoted field.
+Exporter підтримує escaping:
+
+- коми;
+- подвійної лапки;
+- `\n`;
+- `\r`;
+- multiline fields.
+
+Значення:
+
+```text
+Лічильник, "нічний"
+резервний
+```
+
+записується у quoted field.
+
+Подвійна лапка перетворюється:
+
+```text
+"
+```
+
+на:
+
+```text
+""
+```
+
+усередині quoted CSV field.
 
 ---
 
-## 9. CsvParser та round-trip
+## 9. Імпорт і round-trip
 
-Для читання CSV створено:
+Для читання створено:
 
 ```java
 CsvParser
 ```
 
-Читання файла:
+Parser читає весь документ, тому перенос рядка всередині quoted field не сприймається як новий логічний запис.
 
-```java
-Files.readString(
-        path,
-        StandardCharsets.UTF_8
-);
-```
+Підтримуються:
 
-Parser підтримує:
-
-- прості поля;
+- simple fields;
 - quoted fields;
-- коми всередині поля;
-- escaped quotes `""`;
+- comma inside quotes;
+- escaped quotes;
 - multiline fields;
 - `LF`;
-- `CRLF`;
-- порожній CSV.
+- `CRLF`.
 
-Для розбору не використовується:
+Простий:
 
 ```java
 split(",")
 ```
 
-оскільки цей підхід неправильно обробляє кому всередині quoted field та multiline values.
+не використовується.
 
-Повний round-trip:
+### Алгоритм round-trip
 
 ```text
-UtilityReadingRecord
+Repository<UtilityReadingRecord>
 ↓
-CsvExporter
+List<UtilityReadingRecord>
 ↓
-CSV
+CsvExporter.write()
 ↓
-CsvParser
+lab5-readings.csv
+↓
+CsvParser.read()
 ↓
 UtilityReadingRecord.fromCsvFields()
 ↓
-equals()
+Repository<UtilityReadingRecord>
+↓
+List.equals()
 ```
 
-У тесті використовується поле, що одночасно містить:
-
-- кому;
-- лапки;
-- перенос рядка.
-
-Після відновлення:
+Перевірка:
 
 ```java
-assertEquals(original, restored);
+if (!original.equals(restored)) {
+    throw new DataStorageException(
+            "round-trip verification failed"
+    );
+}
 ```
+
+Результат:
+
+```text
+початкових об'єктів: 5
+відновлених об'єктів: 5
+round-trip: успішно
+```
+
+Ключ:
+
+```text
+meter + date
+```
+
+Наприклад:
+
+```text
+meter = Лічильник, "нічний"
+        резервний
+
+date = 2026-11-05
+```
+
+після експорту та імпорту зберігається без зміни.
 
 ---
 
-## 10. DataStorageException та обробка помилок
+## 10. Помилки
 
-Створено власний checked exception:
+Для помилок зберігання, CSV і reflection створено:
 
 ```java
 DataStorageException
 ```
 
-Підтримуються конструктори:
+Конструктори:
 
 ```java
 DataStorageException(String message)
@@ -2745,32 +2906,171 @@ DataStorageException(
 )
 ```
 
-Початкова причина помилки не втрачається.
+Початкова технічна помилка зберігається через:
 
-| Помилка | Результат |
-|---|---|
-| неправильна кількість CSV-полів | `DataStorageException` |
-| неправильне число | `DataStorageException` + `NumberFormatException` |
-| неправильна дата | `DataStorageException` |
-| незакрите quoted field | `DataStorageException` |
-| неправильна структура CSV | `DataStorageException` |
-| відсутній файл | `DataStorageException` + `IOException` |
-| помилка запису файла | `DataStorageException` + `IOException` |
-| клас без `@CsvColumn` | `DataStorageException` |
+```java
+getCause()
+```
 
-Помилки не ігноруються.
+| Рівень | Приклад | Результат | Cause |
+|---|---|---|---|
+| Модель | blank `meter` | `IllegalArgumentException` | — |
+| Модель | від'ємне `value` | `IllegalArgumentException` | — |
+| Модель | `NaN` / Infinity | `IllegalArgumentException` | — |
+| Формат | не 4 CSV-поля | `DataStorageException` | — |
+| Значення | неправильне число | `DataStorageException` | `NumberFormatException` |
+| Значення | неправильна дата | `DataStorageException` | помилка parse |
+| CSV | незакриті лапки | `DataStorageException` | — |
+| CSV | символ після закритих лапок | `DataStorageException` | — |
+| Файл | файл не існує | `DataStorageException` | `IOException` |
+| Файл | запис CSV неможливий | `DataStorageException` | `IOException` |
+| Reflection | немає `@CsvColumn` | `DataStorageException` | — |
+| Reflection | поле недоступне | `DataStorageException` | — |
+
+Файлове повідомлення містить також шлях:
+
+```text
+failed to read CSV file: <path>
+```
+
+або:
+
+```text
+failed to write CSV file: <path>
+```
+
+Помилки не поглинаються порожнім `catch`.
 
 ---
 
-## 11. Запуск CSV-режиму
+## 11. Тестування
 
-Для демонстрації Lab 5 у `Main` додано:
+До Lab 5:
 
 ```text
---export-csv
+79 тестів
 ```
 
-Запуск:
+Після Lab 5:
+
+```text
+Tests run: 121, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+Перевірено:
+
+- generic `Repository<T>`;
+- `add()`;
+- `all()`;
+- immutable snapshot;
+- `find(Predicate<? super T>)`;
+- заборону `null`;
+- `DataStorageException`;
+- конструктор із cause;
+- `@CsvColumn`;
+- runtime reflection;
+- назви колонок;
+- детермінований порядок;
+- empty records;
+- CSV header;
+- comma escaping;
+- quote escaping;
+- multiline escaping;
+- simple CSV parsing;
+- quoted comma;
+- escaped quote;
+- multiline parsing;
+- `LF`;
+- `CRLF`;
+- empty CSV;
+- unclosed quotes;
+- wrong field count;
+- bad number;
+- bad date;
+- missing file;
+- file write error;
+- `getCause()`;
+- `fromCsv(String)`;
+- більше одного record у `fromCsv`;
+- `NaN`;
+- `Infinity`;
+- `-Infinity`;
+- round-trip;
+- JSON exporter;
+- спільний `Exporter<T>`;
+- reflection cache;
+- performance comparison;
+- усі попередні тести Lab 1–4.
+
+### Фізичні та логічні рядки CSV
+
+Файл містить:
+
+```text
+7 фізичних рядків
+```
+
+Пояснення:
+
+```text
+1 header
+4 звичайні data records
+2 фізичні рядки для останнього multiline record
+```
+
+Логічно parser відновлює:
+
+```text
+1 header + 5 records
+```
+
+Після пропуску header створюється:
+
+```text
+5 UtilityReadingRecord
+```
+
+---
+
+## 12. Інфраструктура, JAR, CI та додаткове завдання ⭐
+
+Команди:
+
+```powershell
+.\mvnw.cmd test
+.\mvnw.cmd verify
+.\mvnw.cmd package
+```
+
+Фінальна локальна перевірка:
+
+```text
+Tests run: 121, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+SpotBugs не знаходить дефектів.
+
+JAR:
+
+```text
+target/lab01-5.0.0.jar
+```
+
+Версія:
+
+```powershell
+java -jar target\lab01-5.0.0.jar --version
+```
+
+Результат:
+
+```text
+Version 5.0.0
+```
+
+### CSV export
 
 ```powershell
 java -jar target\lab01-5.0.0.jar --export-csv out\lab5-readings.csv
@@ -2784,189 +3084,137 @@ CSV створено: out\lab5-readings.csv
 Round-trip перевірка: успішно
 ```
 
-Створений файл:
+### Додаткове завдання ⭐ — другий формат
 
-```text
-out/lab5-readings.csv
+Створено спільний контракт:
+
+```java
+Exporter<T>
 ```
 
-Режим створює 5 записів, експортує їх у CSV, читає файл назад та перевіряє рівність початкових і відновлених об'єктів.
+Реалізації:
 
----
+```text
+CsvExporter<T>
+JsonExporter<T>
+```
 
-## 12. Сумісність із попередніми лабораторними
+JSON використовує ті самі поля:
 
-Попередній режим роботи збережено:
+```java
+@CsvColumn
+```
+
+Запуск:
 
 ```powershell
-java -jar target\lab01-5.0.0.jar --input data\input.csv --output out\report.txt
+java -jar target\lab01-5.0.0.jar --export-json out\lab5-readings.json
 ```
 
-Контрольний результат:
+Створюється JSON-масив із 5 об'єктів.
 
-```text
-Результати:
-Кількість коректних записів: 3
-Сумарне споживання: 186.25
-Загальна вартість: 1198.32
-Найбільше споживання: 125.50
+Складне значення зберігається як:
+
+```json
+"лічильник": "Лічильник, \"нічний\"\nрезервний"
 ```
 
-Результат не змінився порівняно з Lab 4.
-
-Отже додавання repository та CSV-підсистеми не порушило попередню зовнішню поведінку програми.
-
----
-
-## 13. Тестування
-
-До Lab 5:
-
-```text
-79 тестів
-```
-
-Після Lab 5:
-
-```text
-Tests run: 112, Failures: 0, Errors: 0, Skipped: 0
-BUILD SUCCESS
-```
-
-Перевірено:
-
-- `Repository<T>`;
-- додавання об'єктів;
-- immutable snapshot;
-- `find(Predicate<? super T>)`;
-- заборону `null`;
-- `DataStorageException`;
-- збереження `cause`;
-- `@CsvColumn`;
-- доступ до анотацій через Reflection API;
-- CSV header;
-- детермінований порядок колонок;
-- UTF-8;
-- порожній список;
-- comma escaping;
-- quote escaping;
-- multiline escaping;
-- simple CSV;
-- quoted comma;
-- escaped quote;
-- multiline parsing;
-- `LF`;
-- `CRLF`;
-- порожній CSV;
-- незакриті лапки;
-- неправильну кількість полів;
-- неправильне число;
-- помилку читання файла;
-- помилку запису файла;
-- object → CSV → object round-trip;
-- усі попередні тести Lab 1–4.
-
----
-
-## 14. Maven, SpotBugs, JAR і CI
-
-Основні команди:
-
-```powershell
-.\mvnw.cmd test
-.\mvnw.cmd verify
-.\mvnw.cmd package
-```
-
-Результат:
-
-```text
-Tests run: 112, Failures: 0, Errors: 0, Skipped: 0
-BUILD SUCCESS
-```
-
-JAR:
-
-```text
-target/lab01-5.0.0.jar
-```
-
-Перевірка версії:
-
-```powershell
-java -jar target\lab01-5.0.0.jar --version
-```
-
-Результат:
-
-```text
-Version 5.0.0
-```
-
-### GitHub Actions
-
-CI працює на:
-
-| ОС | Результат |
-|---|---|
-| Ubuntu | Success |
-| Windows | Success |
-| macOS | Success |
-
-На кожній ОС виконуються:
-
-- Java 21;
-- Maven Wrapper;
-- `verify`;
-- 112 тестів;
-- SpotBugs;
-- перевірка версії;
-- створення JAR;
-- запуск `--export-csv`;
-- round-trip перевірка;
-- створення CSV;
-- завантаження artifacts.
-
-Успішний CI run:
-
-```text
-#58
-```
-
-Усі три jobs:
-
-```text
-verify (ubuntu-latest)  -> Success
-verify (windows-latest) -> Success
-verify (macos-latest)   -> Success
-```
+### Додаткове завдання ⭐ — reflection cache
 
 Створено:
 
-```text
-3 artifacts
+```java
+ExportFieldCache
 ```
 
-Кожний artifact містить:
+Для кожного:
+
+```java
+Class<?>
+```
+
+список reflection-полів кешується.
+
+Перший вимір:
+
+```text
+Reflection without cache: 38697200 ns
+Reflection with cache:    1120900 ns
+```
+
+Також виконано вимір саме повного CSV export.
+
+Набір:
+
+```text
+1000 records
+50 export iterations
+```
+
+Результат:
+
+```text
+CSV export without cache: 61432100 ns
+CSV export with cache:    50609400 ns
+CSV export cache ratio:   1.21x
+```
+
+Файли після експорту без кешу та з кешем порівнюються:
+
+```java
+assertEquals(
+        withoutCacheCsv,
+        withCacheCsv
+);
+```
+
+Тобто оптимізація не змінює результат.
+
+### GitHub Actions
+
+Workflow запускає:
+
+```text
+ubuntu-latest
+windows-latest
+macos-latest
+```
+
+На кожній ОС налаштовано:
+
+- Java 21;
+- Maven Wrapper;
+- Maven `verify`;
+- 121 тест;
+- SpotBugs;
+- перевірку `--version`;
+- CSV export;
+- JSON export;
+- workflow artifact.
+
+Artifact містить:
 
 ```text
 lab01-5.0.0.jar
 lab5-readings.csv
+lab5-readings.json
 ```
+
+Фінальне посилання на зелений CI run буде зафіксовано після фінального push гілки `lab5`.
 
 ---
 
-## 15. GitHub Issues і Pull Request
+## 13. GitHub Issues і Pull Request
 
 Для Lab 5 створено:
 
-| Issue | Виконана робота | Перевірка |
+| Issue | Зміна | Перевірка |
 |---|---|---|
-| `#22` | `Repository<T>` та `DataStorageException` | unit-тести repository та exception |
-| `#23` | `UtilityReadingRecord` та `@CsvColumn` | модель, reflection, annotation tests |
-| `#24` | `CsvExporter`, UTF-8, reflection, escaping | export tests |
-| `#25` | `CsvParser`, round-trip, негативні сценарії | parser та round-trip tests |
-| `#26` | CI, документація, версія `5.0.0` | Ubuntu, Windows, macOS |
+| `#22` | `Repository<T>`, `DataStorageException` | unit-тести repository та exception |
+| `#23` | `UtilityReadingRecord`, `@CsvColumn` | model та annotation tests |
+| `#24` | reflective CSV exporter, UTF-8, escaping | exporter tests |
+| `#25` | `CsvParser`, round-trip, error tests | parser та round-trip tests |
+| `#26` | CI, документація, версія, release | verify та CI matrix |
 
 Робоча гілка:
 
@@ -2980,7 +3228,7 @@ lab5
 lab5 -> main
 ```
 
-В описі PR:
+В описі:
 
 ```text
 Closes #22
@@ -2990,9 +3238,17 @@ Closes #25
 Closes #26
 ```
 
-Після merge Issues закриються автоматично.
+До Pull Request додаються:
 
-Фінальний Git-тег:
+- локальний результат `verify`;
+- `121` зелений тест;
+- приклад CSV;
+- результат round-trip;
+- таблиця помилок;
+- CI на трьох ОС;
+- JAR, CSV і JSON artifacts.
+
+Після merge створюється тег:
 
 ```text
 v5.0.0
@@ -3000,7 +3256,56 @@ v5.0.0
 
 ---
 
-## 16. Академічна доброчесність
+## 14. Порівняння стану
+
+Контрольний режим попередньої лабораторної роботи збережено:
+
+```powershell
+java -jar target\lab01-5.0.0.jar --input data\input.csv --output out\report.txt
+```
+
+Результат:
+
+```text
+Результати:
+Кількість коректних записів: 3
+Сумарне споживання: 186.25
+Загальна вартість: 1198.32
+Найбільше споживання: 125.50
+```
+
+Порівняння:
+
+| Показник | Lab 4 | Lab 5 |
+|---|---:|---:|
+| Коректних записів | 3 | 3 |
+| Сумарне споживання | 186.25 | 186.25 |
+| Загальна вартість | 1198.32 | 1198.32 |
+| Найбільше споживання | 125.50 | 125.50 |
+
+Отже додавання:
+
+```text
+Repository<T>
+CSV
+Reflection
+round-trip
+JSON
+cache
+```
+
+не змінило попередню зовнішню поведінку програми.
+
+Кількість тестів:
+
+```text
+Lab 4 -> 79
+Lab 5 -> 121
+```
+
+---
+
+## 15. Академічна доброчесність
 
 Під час виконання лабораторної роботи використовувався ChatGPT як допоміжний інструмент.
 
@@ -3009,180 +3314,294 @@ v5.0.0
 - аналізу методичних вимог;
 - планування GitHub Issues;
 - пояснення generics;
-- реалізації `Repository<T>`;
-- пояснення Reflection API;
+- перевірки `Repository<T>`;
+- пояснення annotations;
+- роботи з Reflection API;
 - аналізу CSV escaping;
-- формування тестів;
-- перевірки round-trip;
+- перевірки multiline CSV;
+- формування негативних тестів;
+- аналізу round-trip;
 - Maven та SpotBugs;
-- налаштування GitHub Actions;
-- оформлення README та REPORT.
+- GitHub Actions;
+- перевірки README і REPORT.
+
+Використовувалися ролі:
+
+- Менеджера — розбиття роботи на Issues;
+- Розробника — реалізація окремих компонентів;
+- Валідатора — перевірка CSV, round-trip і крайових випадків;
+- DevOps — Maven, SpotBugs, JAR та CI;
+- Документатора — README і REPORT;
+- Рецензента — перевірка відповідності методичним вимогам.
 
 Прийняті рекомендації:
 
-- використовувати `Repository<T>` без raw types;
+- використати `Repository<T>` без raw types;
 - повертати immutable snapshot;
-- використовувати runtime-анотацію `@CsvColumn`;
-- не прив'язувати exporter до конкретного доменного класу;
-- використовувати явне UTF-8;
-- не використовувати `split(",")` для повноцінного CSV;
-- зберігати початковий `cause` у `DataStorageException`;
-- перевіряти round-trip через `equals()`.
+- використати `Predicate<? super T>`;
+- використовувати runtime `@CsvColumn`;
+- зробити exporter незалежним від доменного класу;
+- використовувати explicit UTF-8;
+- реалізувати документний CSV parser;
+- зберігати `cause`;
+- перевіряти `NaN` та Infinity;
+- додати `fromCsv(String)`;
+- додати другий формат через `Exporter<T>`;
+- кешувати reflection fields;
+- окремо виміряти повний export із кешем і без кешу.
 
-Усі зміни запускалися та перевірялися автором роботи через JUnit, Maven, JAR та GitHub Actions.
+Скориговані рішення:
+
+- початково `fromCsv()` не був реалізований окремо та використовувався `fromCsvFields()`; додано предметний `fromCsv(String)`;
+- початковий performance test вимірював лише reflection lookup; його розширено до повного CSV export;
+- повідомлення file errors доповнено шляхом файла;
+- `UtilityReadingRecord` доповнено перевіркою `Double.isFinite()`;
+- JSON export підключено до реального JAR та CI.
+
+Усі зміни перевірялися автором через:
+
+```text
+JUnit
+Maven test
+Maven verify
+SpotBugs
+JAR
+CSV
+JSON
+GitHub Actions
+```
+
+Автор може пояснити роботу generics, annotations, reflection, CSV escaping, parser, cause, round-trip та field cache.
 
 ---
 
-## 17. Відповіді на контрольні питання
+## 16. Відповіді на контрольні питання
 
-### 1. Для чого потрібен параметр типу `<T>`?
+### 1. Яку проблему розв'язує параметр типу в Repository<T>?
 
-Параметр `<T>` дозволяє створити один тип `Repository`, який може безпечно працювати з різними типами об'єктів без дублювання коду.
+Він дозволяє створити одне типобезпечне сховище для різних типів об'єктів без дублювання класів та без ручних приведень типів.
 
-### 2. Чому raw types небажані?
+### 2. Чим параметризований клас відрізняється від raw type?
 
-Raw types вимикають частину перевірок типів компілятором і можуть призвести до помилок `ClassCastException`.
+Параметризований клас зберігає інформацію про тип:
 
-### 3. Для чого використовується `Predicate<T>`?
+```java
+Repository<UtilityReadingRecord>
+```
 
-`Predicate` представляє умову, яка повертає `true` або `false`, і може використовуватися для пошуку або фільтрації.
+Raw type:
 
-### 4. Чому використано `Predicate<? super T>`?
+```java
+Repository
+```
 
-Це робить API гнучкішим і дозволяє передавати predicate для самого типу `T` або його базового типу.
+вимикає частину compile-time перевірок і може призвести до помилок типів.
 
-### 5. Що таке immutable snapshot?
+### 3. Навіщо Predicate<? super T> у методі пошуку?
 
-Це незмінна копія стану колекції на певний момент часу.
+Він описує умову пошуку та дозволяє використовувати predicate для `T` або його супертипу.
 
-У роботі вона створюється через:
+### 4. Чому all() має повертати незмінний знімок?
+
+Щоб зовнішній код не міг змінити внутрішню колекцію repository.
+
+У роботі використано:
 
 ```java
 List.copyOf(items)
 ```
 
-### 6. Що таке annotation?
+### 5. Що таке checked exception і коли він доречний у цій роботі?
 
-Annotation — це метадані, які можна додавати до класів, полів, методів та інших елементів Java-коду.
+Checked exception компілятор вимагає обробити або передати через `throws`.
 
-### 7. Для чого `RetentionPolicy.RUNTIME`?
+`DataStorageException` використовується для очікуваних помилок CSV, файлів і reflection, які викликаючий код повинен явно обробити.
 
-Воно зберігає annotation під час виконання програми, тому її можна прочитати через reflection.
+### 6. Для чого зберігати cause власного винятку?
 
-### 8. Для чого `@Target(ElementType.FIELD)`?
-
-Це обмежує використання annotation полями класу.
-
-### 9. Що таке Reflection API?
-
-Reflection API дозволяє під час виконання програми досліджувати структуру класів, поля, методи та annotations.
-
-### 10. Чому exporter не повинен бути прив'язаний до `UtilityReadingRecord`?
-
-Універсальний exporter можна повторно використовувати для інших класів, якщо їх поля мають `@CsvColumn`.
-
-### 11. Для чого потрібен детермінований порядок колонок?
-
-Щоб один і той самий клас завжди створював CSV з однаковим порядком колонок незалежно від запуску чи ОС.
-
-### 12. Чому `split(",")` недостатньо для CSV?
-
-Наприклад:
+Щоб не втрачати початкову технічну причину, наприклад:
 
 ```text
-"Лічильник, резервний",10.0
+IOException
+NumberFormatException
 ```
 
-містить кому всередині quoted field. Простий `split(",")` неправильно розділить таке значення.
+При цьому `DataStorageException` додає зрозумілий контекст операції.
 
-### 13. Як CSV зберігає подвійні лапки?
+### 7. Чим Path і Files кращі за складання шляху рядком?
 
-Лапка всередині quoted field подвоюється:
+`Path` і `Files` надають стандартний кросплатформний API і не вимагають вручну працювати з `\` або `/`.
+
+### 8. Чому кодування потрібно задавати і під час запису, і під час читання?
+
+Інакше одна операція може використати системне default encoding і дані будуть прочитані не так, як були записані.
+
+У роботі в обох напрямках використовується:
+
+```java
+StandardCharsets.UTF_8
+```
+
+### 9. Що роблять @Retention(RUNTIME) і @Target(FIELD)?
+
+`RUNTIME` залишає annotation доступною для reflection під час виконання.
+
+`FIELD` дозволяє застосовувати annotation до полів.
+
+### 10. Чому анотація не виконує експорт сама?
+
+Annotation містить лише метадані. Їх читає `CsvExporter`, який виконує реальну логіку експорту.
+
+### 11. Чим getDeclaredFields() відрізняється від отримання публічних полів?
+
+`getDeclaredFields()` повертає поля, оголошені безпосередньо в класі, включно з `private`.
+
+Отримання public fields працює лише з публічно доступними полями та може враховувати успадковані поля.
+
+### 12. Навіщо перевіряти trySetAccessible()?
+
+Поля моделі є `private`. `trySetAccessible()` перевіряє, чи дозволяє JVM reflection-доступ до такого поля.
+
+Якщо доступ неможливий, exporter повертає контрольовану помилку.
+
+### 13. Чому порядок полів для CSV потрібно зробити детермінованим?
+
+Щоб однаковий клас завжди створював однаковий header і однаковий порядок значень незалежно від запуску або ОС.
+
+У роботі поля сортуються за Java-іменем.
+
+### 14. Чому split(",") не підходить для загального CSV?
+
+Тому що кома може бути частиною quoted field:
 
 ```text
-"нічний"
+"Лічильник, резервний"
 ```
 
-стає:
+Також quoted field може містити перенос рядка.
+
+### 15. Як екрануються кома, лапка й перенесення рядка в CSV?
+
+Поле з такими символами береться у подвійні лапки.
+
+Подвійна лапка всередині поля подвоюється:
 
 ```text
-"""нічний"""
+"
 ```
 
-у контексті quoted CSV field.
-
-### 14. Як обробляється multiline field?
-
-Перенос рядка всередині quoted field є частиною значення, а не кінцем CSV-запису.
-
-### 15. Чому явно використовується UTF-8?
-
-Щоб читання та запис не залежали від default encoding конкретної операційної системи.
-
-### 16. Для чого зберігати `cause` у власному exception?
-
-`cause` дозволяє не втратити початкову технічну причину помилки, наприклад `IOException` або `NumberFormatException`.
-
-### 17. Що таке round-trip?
-
-Це цикл:
+перетворюється на:
 
 ```text
-object -> serialization -> deserialization -> object
+""
 ```
 
-Після нього відновлений об'єкт повинен бути логічно рівним початковому.
+### 16. Чому порожній список потребує окремого параметра Class<T>?
 
-### 18. Чому для round-trip важливий `equals()`?
+Якщо список порожній, exporter не може визначити тип із першого елемента.
 
-Без логічного `equals()` неможливо надійно довести, що відновлений об'єкт містить ті самі дані.
+`Class<T>` потрібен для отримання анотованих полів та побудови header.
 
-### 19. Чим `Path` і `Files` зручні для кросплатформної програми?
+### 17. Чим універсальний експортер відрізняється від предметного fromCsv?
 
-Вони надають стандартний API для роботи зі шляхами та файлами незалежно від Windows, Linux або macOS.
+Exporter працює з будь-яким класом через reflection і annotations.
 
-### 20. Що доводить CI на трьох ОС?
+`fromCsv()` знає конкретні типи доменної моделі та виконує перетворення:
 
-Він доводить, що однакова версія проєкту компілюється, проходить тести, створює JAR та CSV на Ubuntu, Windows і macOS.
+```text
+String -> LocalDate
+String -> double
+```
+
+### 18. Які рівні помилок розрізняє програма?
+
+Розрізняються:
+
+```text
+model validation
+CSV format
+field values
+file operations
+reflection
+```
+
+Для кожного рівня є відповідна реакція та повідомлення.
+
+### 19. Що доводить тест round-trip?
+
+Він доводить, що після:
+
+```text
+object -> CSV -> object
+```
+
+не втрачаються значення, порядок та спеціальні символи.
+
+Початковий і відновлений списки є рівними.
+
+### 20. Чому виняток не можна поглинати порожнім catch?
+
+Тому що програма втратить інформацію про реальну причину помилки.
+
+Наприклад, відсутній файл не можна перетворювати на звичайний порожній результат. Помилку потрібно обробити або передати далі разом із контекстом.
 
 ---
 
-## 18. Висновки
+## 17. Висновки
 
-У Lab 5:
+У лабораторній роботі №5:
 
 - створено параметризоване сховище `Repository<T>`;
+- raw types не використовуються;
 - реалізовано `add()`, `all()` і `find()`;
-- `all()` повертає immutable snapshot;
+- snapshot є immutable;
 - створено `DataStorageException`;
-- реалізовано збереження початкового `cause`;
+- зберігається початковий `cause`;
 - створено `UtilityReadingRecord`;
-- для дати використано `LocalDate`;
-- створено runtime-анотацію `@CsvColumn`;
+- використано `String`, `LocalDate` і `double`;
+- додано перевірки `NaN` та Infinity;
+- створено `@CsvColumn`;
+- annotation доступна через Reflection API;
 - реалізовано універсальний `CsvExporter`;
-- використано Reflection API;
-- забезпечено детермінований порядок CSV-колонок;
-- реалізовано escaping ком, лапок і переносів рядка;
-- читання та запис виконуються в UTF-8;
-- створено власний `CsvParser`;
-- parser підтримує multiline quoted fields;
-- реалізовано відновлення об'єктів із CSV;
-- реалізовано повний round-trip;
-- створюється CSV із 5 записами;
-- збережено контрольний результат попередньої лабораторної роботи;
-- кількість тестів збільшено з 79 до 112;
-- Maven `verify` і `package` проходять успішно;
+- exporter не прив'язаний до предметної області;
+- реалізовано детермінований порядок колонок;
+- реалізовано comma, quote та multiline escaping;
+- запис і читання виконуються з explicit UTF-8;
+- реалізовано документний `CsvParser`;
+- реалізовано `fromCsv(String)`;
+- реалізовано CSV round-trip;
+- 5 початкових об'єктів відновлюються як 5 рівних об'єктів;
+- multiline CSV містить 7 фізичних рядків;
+- збережено попередній контрольний звіт;
+- кількість тестів збільшено з 79 до 121;
+- `verify` і SpotBugs проходять успішно;
+- створюється executable JAR;
 - версію оновлено до `5.0.0`;
-- CI успішно працює на Ubuntu, Windows і macOS;
-- створюються 3 artifacts із JAR та CSV.
+- CI налаштовано на Ubuntu, Windows і macOS;
+- реалізовано JSON exporter через `Exporter<T>` ⭐;
+- JSON використовує ті самі `@CsvColumn` ⭐;
+- реалізовано reflection field cache ⭐;
+- виконано performance comparison на 1000 записах і 50 експортів ⭐;
+- cached export у контрольному запуску показав співвідношення `1.21x`;
+- artifacts містять JAR, CSV та JSON.
+
+Створений файл:
+
+```text
+out/lab5-readings.csv
+```
+
+є узгодженим UTF-8 CSV і може використовуватися як вхідний текстовий файл для наступного програмного блоку.
 
 Фінальний цикл:
 
 ```text
-Pull Request lab5 -> main
-merge
-tag v5.0.0
+lab5
+↓
+Pull Request
+↓
+main
+↓
+v5.0.0
 ```
-
-Створений CSV може використовуватися як вхідний файл для наступного етапу обробки даних.
 ````

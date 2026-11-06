@@ -49,6 +49,7 @@ public final class Main {
         Path input = Path.of("data", "input.csv");
         Path output = Path.of("out", "report.txt");
         Path csvOutput = null;
+        Path jsonOutput = null;
 
         for (int i = 0; i < args.length; i++) {
             if ("--help".equals(args[i])) {
@@ -97,6 +98,18 @@ public final class Main {
                 continue;
             }
 
+            if ("--export-json".equals(args[i])) {
+                if (i + 1 >= args.length) {
+                    System.out.printf(
+                            "Помилка: після --export-json потрібно вказати шлях до файла%n"
+                    );
+                    return EXIT_ARGUMENT_ERROR;
+                }
+
+                jsonOutput = Path.of(args[++i]);
+                continue;
+            }
+
             System.out.printf(
                     "Помилка: невідомий аргумент %s%n",
                     args[i]
@@ -106,6 +119,10 @@ public final class Main {
 
         if (csvOutput != null) {
             return runCsvExport(csvOutput);
+        }
+
+        if (jsonOutput != null) {
+            return runJsonExport(jsonOutput);
         }
 
         try {
@@ -150,52 +167,7 @@ public final class Main {
      */
     private static int runCsvExport(Path csvOutput) {
         Repository<UtilityReadingRecord> repository =
-                new Repository<>();
-
-        repository.add(
-                new UtilityReadingRecord(
-                        "Електролічильник-1",
-                        LocalDate.of(2026, 11, 1),
-                        125.50,
-                        4.32
-                )
-        );
-
-        repository.add(
-                new UtilityReadingRecord(
-                        "Водомір-1",
-                        LocalDate.of(2026, 11, 2),
-                        35.25,
-                        35.20
-                )
-        );
-
-        repository.add(
-                new UtilityReadingRecord(
-                        "Газовий-лічильник-1",
-                        LocalDate.of(2026, 11, 3),
-                        25.50,
-                        7.96
-                )
-        );
-
-        repository.add(
-                new UtilityReadingRecord(
-                        "Електролічильник-2",
-                        LocalDate.of(2026, 11, 4),
-                        80.75,
-                        4.32
-                )
-        );
-
-        repository.add(
-                new UtilityReadingRecord(
-                        "Лічильник, \"нічний\"\nрезервний",
-                        LocalDate.of(2026, 11, 5),
-                        42.75,
-                        5.10
-                )
-        );
+                createDemoRepository();
 
         try {
             Path parent = csvOutput.getParent();
@@ -273,6 +245,115 @@ public final class Main {
     }
 
     /**
+     * Створює демонстраційний JSON лабораторної роботи №5.
+     *
+     * @param jsonOutput шлях до JSON-файла
+     * @return код завершення програми
+     */
+    private static int runJsonExport(Path jsonOutput) {
+        Repository<UtilityReadingRecord> repository =
+                createDemoRepository();
+
+        try {
+            Path parent = jsonOutput.getParent();
+
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+
+            Exporter<UtilityReadingRecord> exporter =
+                    new JsonExporter<>();
+
+            exporter.export(
+                    jsonOutput,
+                    UtilityReadingRecord.class,
+                    repository.all()
+            );
+
+            System.out.printf(
+                    "JSON створено: %s%n",
+                    jsonOutput
+            );
+
+            System.out.printf(
+                    "Кількість записів: %d%n",
+                    repository.all().size()
+            );
+
+            return EXIT_SUCCESS;
+        } catch (IOException exception) {
+            System.out.printf(
+                    "Помилка створення каталогу: %s%n",
+                    exception.getMessage()
+            );
+            return EXIT_IO_ERROR;
+        } catch (DataStorageException exception) {
+            System.out.printf(
+                    "Помилка роботи з JSON: %s%n",
+                    exception.getMessage()
+            );
+            return EXIT_IO_ERROR;
+        }
+    }
+
+    /**
+     * Створює демонстраційний набір записів для експорту.
+     *
+     * @return repository з демонстраційними записами
+     */
+    private static Repository<UtilityReadingRecord> createDemoRepository() {
+        Repository<UtilityReadingRecord> repository =
+                new Repository<>();
+
+        repository.add(
+                new UtilityReadingRecord(
+                        "Електролічильник-1",
+                        LocalDate.of(2026, 11, 1),
+                        125.50,
+                        4.32
+                )
+        );
+
+        repository.add(
+                new UtilityReadingRecord(
+                        "Водомір-1",
+                        LocalDate.of(2026, 11, 2),
+                        35.25,
+                        35.20
+                )
+        );
+
+        repository.add(
+                new UtilityReadingRecord(
+                        "Газовий-лічильник-1",
+                        LocalDate.of(2026, 11, 3),
+                        25.50,
+                        7.96
+                )
+        );
+
+        repository.add(
+                new UtilityReadingRecord(
+                        "Електролічильник-2",
+                        LocalDate.of(2026, 11, 4),
+                        80.75,
+                        4.32
+                )
+        );
+
+        repository.add(
+                new UtilityReadingRecord(
+                        "Лічильник, \"нічний\"\nрезервний",
+                        LocalDate.of(2026, 11, 5),
+                        42.75,
+                        5.10
+                )
+        );
+
+        return repository;
+    }
+
+    /**
      * Виводить довідку про параметри командного рядка.
      */
     private static void printHelp() {
@@ -280,7 +361,8 @@ public final class Main {
                 "Використання: java -jar <файл.jar> "
                         + "[--help] [--version] "
                         + "[--input <файл>] [--output <файл>] "
-                        + "[--export-csv <файл>]%n"
+                        + "[--export-csv <файл>] "
+                        + "[--export-json <файл>]%n"
         );
     }
 

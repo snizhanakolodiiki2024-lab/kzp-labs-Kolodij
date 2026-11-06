@@ -162,4 +162,108 @@ void rejectsInvalidCsvNumberAndPreservesCause() {
             exception.getCause().getClass()
     );
 }
+
+@Test
+void restoresRecordFromCsv() throws Exception {
+    String csv =
+            "2026-11-05,\"Лічильник, \"\"нічний\"\"\",5.1,42.75";
+
+    UtilityReadingRecord record =
+            UtilityReadingRecord.fromCsv(csv);
+
+    assertEquals(
+            "Лічильник, \"нічний\"",
+            record.getMeter()
+    );
+
+    assertEquals(
+            LocalDate.of(2026, 11, 5),
+            record.getDate()
+    );
+
+    assertEquals(5.1, record.getTariff());
+    assertEquals(42.75, record.getValue());
+}
+
+@Test
+void fromCsvRejectsMoreThanOneRecord() {
+    String csv =
+            "2026-11-01,Лічильник-1,4.32,125.5\n"
+                    + "2026-11-02,Лічильник-2,4.32,80.75";
+
+    assertThrows(
+            DataStorageException.class,
+            () -> UtilityReadingRecord.fromCsv(csv)
+    );
+}
+
+@Test
+void rejectsNonFiniteValue() {
+    LocalDate date = LocalDate.of(2026, 11, 1);
+
+    assertThrows(
+            IllegalArgumentException.class,
+            () -> new UtilityReadingRecord(
+                    "Лічильник-1",
+                    date,
+                    Double.NaN,
+                    4.32
+            )
+    );
+
+    assertThrows(
+            IllegalArgumentException.class,
+            () -> new UtilityReadingRecord(
+                    "Лічильник-1",
+                    date,
+                    Double.POSITIVE_INFINITY,
+                    4.32
+            )
+    );
+
+    assertThrows(
+            IllegalArgumentException.class,
+            () -> new UtilityReadingRecord(
+                    "Лічильник-1",
+                    date,
+                    Double.NEGATIVE_INFINITY,
+                    4.32
+            )
+    );
+}
+
+@Test
+void rejectsNonFiniteTariff() {
+    LocalDate date = LocalDate.of(2026, 11, 1);
+
+    assertThrows(
+            IllegalArgumentException.class,
+            () -> new UtilityReadingRecord(
+                    "Лічильник-1",
+                    date,
+                    10.0,
+                    Double.NaN
+            )
+    );
+
+    assertThrows(
+            IllegalArgumentException.class,
+            () -> new UtilityReadingRecord(
+                    "Лічильник-1",
+                    date,
+                    10.0,
+                    Double.POSITIVE_INFINITY
+            )
+    );
+
+    assertThrows(
+            IllegalArgumentException.class,
+            () -> new UtilityReadingRecord(
+                    "Лічильник-1",
+                    date,
+                    10.0,
+                    Double.NEGATIVE_INFINITY
+            )
+    );
+}
 }

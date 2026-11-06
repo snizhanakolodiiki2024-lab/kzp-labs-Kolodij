@@ -123,8 +123,8 @@ public final class CsvExporter<T> implements Exporter<T> {
             );
         } catch (IOException exception) {
             throw new DataStorageException(
-                    "failed to write CSV file",
-                    exception
+            "failed to write CSV file: " + path,
+            exception
             );
         }
     }
