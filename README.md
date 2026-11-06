@@ -1336,3 +1336,420 @@ v4.0.0
 - `pom.xml` є єдиним джерелом версії;
 - CI успішно працює на Ubuntu, Windows і macOS;
 - створюються 3 JAR artifacts.
+
+# Лабораторна робота №5
+
+**Дисципліна:** Кросплатформні засоби програмування  
+**Варіант:** №9  
+**Предметна область:** комунальні показники  
+**Java:** 21  
+**Версія:** `5.0.0`  
+**Гілка:** `lab5`
+
+## Основні зміни
+
+У Lab 5 реалізовано параметризоване сховище даних, власний тип винятку, CSV-анотацію, універсальний exporter через Reflection API та зворотне читання CSV.
+
+Створено:
+
+```text
+Repository<T>
+DataStorageException
+CsvColumn
+UtilityReadingRecord
+CsvExporter
+CsvParser
+```
+
+## Repository<T>
+
+Для зберігання об'єктів створено:
+
+```java
+Repository<T>
+```
+
+Реалізовано методи:
+
+```java
+add(T item)
+all()
+find(Predicate<? super T> condition)
+```
+
+Метод `all()` повертає immutable snapshot.
+
+У `Main` замість прямого використання `List<UtilityReading>` як сховища використовується:
+
+```java
+Repository<UtilityReading>
+```
+
+## CSV та Reflection
+
+Створено анотацію:
+
+```java
+@CsvColumn
+```
+
+з параметрами:
+
+```java
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
+```
+
+Для CSV використовується клас:
+
+```java
+UtilityReadingRecord
+```
+
+Поля:
+
+```java
+String meter
+LocalDate date
+double value
+double tariff
+```
+
+Позначені `@CsvColumn`.
+
+`CsvExporter` через Reflection API знаходить анотовані поля та формує CSV.
+
+Порядок колонок:
+
+```text
+дата,лічильник,тариф,значення
+```
+
+## CSV escaping
+
+Реалізовано коректну обробку:
+
+- ком;
+- подвійних лапок;
+- переносів рядка;
+- multiline fields.
+
+Подвійні лапки всередині значення подвоюються.
+
+Приклад:
+
+```text
+Лічильник, "нічний"
+резервний
+```
+
+коректно записується в CSV як quoted multiline field.
+
+## CsvParser
+
+Для читання CSV створено:
+
+```java
+CsvParser
+```
+
+Parser підтримує:
+
+- звичайні поля;
+- quoted fields;
+- коми всередині поля;
+- escaped quotes;
+- multiline fields;
+- `LF`;
+- `CRLF`.
+
+Для розбору CSV не використовується:
+
+```java
+split(",")
+```
+
+оскільки такий підхід некоректно працює з quoted fields.
+
+## UTF-8
+
+Запис CSV виконується через:
+
+```java
+Files.writeString(
+        path,
+        csv,
+        StandardCharsets.UTF_8
+);
+```
+
+Читання CSV:
+
+```java
+Files.readString(
+        path,
+        StandardCharsets.UTF_8
+);
+```
+
+Таким чином кодування UTF-8 задається явно.
+
+## Round-trip
+
+Перевірено повний цикл:
+
+```text
+UtilityReadingRecord
+        ↓
+CsvExporter
+        ↓
+CSV
+        ↓
+CsvParser
+        ↓
+UtilityReadingRecord
+```
+
+Після експорту та повторного читання об'єкти порівнюються через:
+
+```java
+equals()
+```
+
+Round-trip успішно працює також для поля з комою, лапками та переносом рядка.
+
+## DataStorageException
+
+Для помилок роботи зі сховищем та CSV створено:
+
+```java
+DataStorageException
+```
+
+Початкова причина помилки зберігається через:
+
+```java
+Throwable cause
+```
+
+Перевірено:
+
+- неправильну кількість CSV-полів;
+- неправильне число;
+- некоректний CSV;
+- незакриті лапки;
+- відсутній файл;
+- помилку запису файла;
+- збереження `cause`.
+
+## Запуск CSV-режиму
+
+Створення демонстраційного CSV:
+
+```powershell
+java -jar target\lab01-5.0.0.jar --export-csv out\lab5-readings.csv
+```
+
+Результат:
+
+```text
+CSV створено: out\lab5-readings.csv
+Кількість записів: 5
+Round-trip перевірка: успішно
+```
+
+Створюється файл:
+
+```text
+out/lab5-readings.csv
+```
+
+## Сумісність із Lab 4
+
+Попередній режим запуску збережено:
+
+```powershell
+java -jar target\lab01-5.0.0.jar --input data\input.csv --output out\report.txt
+```
+
+Контрольний результат залишився без змін:
+
+```text
+Результати:
+Кількість коректних записів: 3
+Сумарне споживання: 186.25
+Загальна вартість: 1198.32
+Найбільше споживання: 125.50
+```
+
+## Тестування
+
+До Lab 5:
+
+```text
+79 тестів
+```
+
+Після Lab 5:
+
+```text
+Tests run: 112, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+Перевірено:
+
+- `Repository<T>`;
+- immutable snapshot;
+- `find()`;
+- `DataStorageException`;
+- `@CsvColumn`;
+- Reflection API;
+- CSV header;
+- UTF-8;
+- comma escaping;
+- quote escaping;
+- multiline fields;
+- `LF` і `CRLF`;
+- порожній CSV;
+- неправильну кількість полів;
+- неправильне число;
+- файлові помилки;
+- round-trip;
+- усі попередні тести Lab 1–4.
+
+## Maven, SpotBugs і JAR
+
+Тести:
+
+```powershell
+.\mvnw.cmd test
+```
+
+Повна перевірка:
+
+```powershell
+.\mvnw.cmd verify
+```
+
+Пакування:
+
+```powershell
+.\mvnw.cmd package
+```
+
+Результат:
+
+```text
+Tests run: 112, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+JAR:
+
+```text
+target/lab01-5.0.0.jar
+```
+
+Перевірка версії:
+
+```powershell
+java -jar target\lab01-5.0.0.jar --version
+```
+
+Результат:
+
+```text
+Version 5.0.0
+```
+
+## GitHub Actions
+
+CI запускається на трьох ОС:
+
+| ОС | Результат |
+| --- | --- |
+| Ubuntu | Success |
+| Windows | Success |
+| macOS | Success |
+
+На кожній ОС:
+
+- Java 21;
+- Maven Wrapper;
+- `verify`;
+- 112 тестів;
+- SpotBugs;
+- перевірка версії;
+- створення CSV;
+- round-trip перевірка;
+- завантаження artifacts.
+
+Успішний CI run:
+
+```text
+#58
+```
+
+Створено:
+
+```text
+3 artifacts
+```
+
+Кожний artifact містить:
+
+```text
+lab01-5.0.0.jar
+lab5-readings.csv
+```
+
+## GitHub Issues
+
+Для Lab 5 створено:
+
+| Issue | Зміст |
+| --- | --- |
+| `#22` | `Repository<T>` та `DataStorageException` |
+| `#23` | `UtilityReadingRecord` та `@CsvColumn` |
+| `#24` | `CsvExporter`, Reflection, UTF-8 та CSV escaping |
+| `#25` | `CsvParser`, round-trip та тести |
+| `#26` | CI, документація та реліз |
+
+У фінальному Pull Request:
+
+```text
+Closes #22
+Closes #23
+Closes #24
+Closes #25
+Closes #26
+```
+
+## Підсумок
+
+У Lab 5:
+
+- створено `Repository<T>`;
+- додано `DataStorageException`;
+- створено `UtilityReadingRecord`;
+- додано `@CsvColumn`;
+- реалізовано універсальний `CsvExporter`;
+- використано Reflection API;
+- реалізовано CSV escaping;
+- реалізовано `CsvParser`;
+- використано explicit UTF-8;
+- реалізовано round-trip;
+- створюється CSV із 5 записами;
+- збережено функціональність Lab 1–4;
+- кількість тестів збільшено з 79 до 112;
+- `verify` і `package` проходять успішно;
+- версію оновлено до `5.0.0`;
+- CI успішно працює на Ubuntu, Windows і macOS;
+- створюються 3 artifacts із JAR та CSV.
+
+Фінальний Git-тег:
+
+```text
+v5.0.0
+```
