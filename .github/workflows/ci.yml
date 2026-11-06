@@ -1,4 +1,3 @@
-```yaml
 name: CI
 
 on:
@@ -79,4 +78,3 @@ jobs:
             out/lab5-readings.csv
             out/lab5-readings.json
           if-no-files-found: error
-```
