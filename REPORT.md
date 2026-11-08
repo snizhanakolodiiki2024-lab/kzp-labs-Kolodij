@@ -3212,7 +3212,11 @@ lab5-readings.csv
 lab5-readings.json
 ```
 
-Фінальне посилання на зелений CI run буде зафіксовано після фінального push гілки `lab5`.
+Фінальний CI: https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij/actions/runs/42475177717
+
+Pull Request: https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij/pull/27
+
+Git tag: https://github.com/snizhanakolodiiki2024-lab/kzp-labs-Kolodij/releases/tag/v5.0.0
 
 ---
 
