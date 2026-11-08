@@ -5,14 +5,14 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.time.LocalDate;
+import java.util.DoubleSummaryStatistics;
 import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
-import java.util.DoubleSummaryStatistics;
 
 /**
- * Головний клас консольної програми лабораторної роботи №4.
+ * Головний клас консольної програми лабораторної роботи №5.
  */
 public final class Main {
 
@@ -48,6 +48,8 @@ public final class Main {
     static int run(String[] args) {
         Path input = Path.of("data", "input.csv");
         Path output = Path.of("out", "report.txt");
+        Path csvOutput = null;
+        Path jsonOutput = null;
 
         for (int i = 0; i < args.length; i++) {
             if ("--help".equals(args[i])) {
@@ -84,11 +86,43 @@ public final class Main {
                 continue;
             }
 
+            if ("--export-csv".equals(args[i])) {
+                if (i + 1 >= args.length) {
+                    System.out.printf(
+                            "Помилка: після --export-csv потрібно вказати шлях до файла%n"
+                    );
+                    return EXIT_ARGUMENT_ERROR;
+                }
+
+                csvOutput = Path.of(args[++i]);
+                continue;
+            }
+
+            if ("--export-json".equals(args[i])) {
+                if (i + 1 >= args.length) {
+                    System.out.printf(
+                            "Помилка: після --export-json потрібно вказати шлях до файла%n"
+                    );
+                    return EXIT_ARGUMENT_ERROR;
+                }
+
+                jsonOutput = Path.of(args[++i]);
+                continue;
+            }
+
             System.out.printf(
                     "Помилка: невідомий аргумент %s%n",
                     args[i]
             );
             return EXIT_ARGUMENT_ERROR;
+        }
+
+        if (csvOutput != null) {
+            return runCsvExport(csvOutput);
+        }
+
+        if (jsonOutput != null) {
+            return runJsonExport(jsonOutput);
         }
 
         try {
@@ -125,13 +159,210 @@ public final class Main {
     }
 
     /**
+     * Створює демонстраційний CSV лабораторної роботи №5
+     * та перевіряє повний цикл запису і відновлення даних.
+     *
+     * @param csvOutput шлях до CSV-файла
+     * @return код завершення програми
+     */
+    private static int runCsvExport(Path csvOutput) {
+        Repository<UtilityReadingRecord> repository =
+                createDemoRepository();
+
+        try {
+            Path parent = csvOutput.getParent();
+
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+
+            List<UtilityReadingRecord> original =
+                    repository.all();
+
+            CsvExporter.write(
+                    csvOutput,
+                    UtilityReadingRecord.class,
+                    original
+            );
+
+            List<List<String>> rows =
+                    CsvParser.read(csvOutput);
+
+            if (rows.isEmpty()) {
+                throw new DataStorageException(
+                        "CSV file does not contain a header"
+                );
+            }
+
+            Repository<UtilityReadingRecord> restoredRepository =
+                    new Repository<>();
+
+            for (int i = 1; i < rows.size(); i++) {
+                restoredRepository.add(
+                        UtilityReadingRecord.fromCsvFields(
+                                rows.get(i)
+                        )
+                );
+            }
+
+            List<UtilityReadingRecord> restored =
+                    restoredRepository.all();
+
+            if (!original.equals(restored)) {
+                throw new DataStorageException(
+                        "round-trip verification failed"
+                );
+            }
+
+            System.out.printf(
+                    "CSV створено: %s%n",
+                    csvOutput
+            );
+
+            System.out.printf(
+                    "Кількість записів: %d%n",
+                    original.size()
+            );
+
+            System.out.printf(
+                    "Round-trip перевірка: успішно%n"
+            );
+
+            return EXIT_SUCCESS;
+        } catch (IOException exception) {
+            System.out.printf(
+                    "Помилка створення каталогу: %s%n",
+                    exception.getMessage()
+            );
+            return EXIT_IO_ERROR;
+        } catch (DataStorageException exception) {
+            System.out.printf(
+                    "Помилка роботи з CSV: %s%n",
+                    exception.getMessage()
+            );
+            return EXIT_IO_ERROR;
+        }
+    }
+
+    /**
+     * Створює демонстраційний JSON лабораторної роботи №5.
+     *
+     * @param jsonOutput шлях до JSON-файла
+     * @return код завершення програми
+     */
+    private static int runJsonExport(Path jsonOutput) {
+        Repository<UtilityReadingRecord> repository =
+                createDemoRepository();
+
+        try {
+            Path parent = jsonOutput.getParent();
+
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+
+            Exporter<UtilityReadingRecord> exporter =
+                    new JsonExporter<>();
+
+            exporter.export(
+                    jsonOutput,
+                    UtilityReadingRecord.class,
+                    repository.all()
+            );
+
+            System.out.printf(
+                    "JSON створено: %s%n",
+                    jsonOutput
+            );
+
+            System.out.printf(
+                    "Кількість записів: %d%n",
+                    repository.all().size()
+            );
+
+            return EXIT_SUCCESS;
+        } catch (IOException exception) {
+            System.out.printf(
+                    "Помилка створення каталогу: %s%n",
+                    exception.getMessage()
+            );
+            return EXIT_IO_ERROR;
+        } catch (DataStorageException exception) {
+            System.out.printf(
+                    "Помилка роботи з JSON: %s%n",
+                    exception.getMessage()
+            );
+            return EXIT_IO_ERROR;
+        }
+    }
+
+    /**
+     * Створює демонстраційний набір записів для експорту.
+     *
+     * @return repository з демонстраційними записами
+     */
+    private static Repository<UtilityReadingRecord> createDemoRepository() {
+        Repository<UtilityReadingRecord> repository =
+                new Repository<>();
+
+        repository.add(
+                new UtilityReadingRecord(
+                        "Електролічильник-1",
+                        LocalDate.of(2026, 11, 1),
+                        125.50,
+                        4.32
+                )
+        );
+
+        repository.add(
+                new UtilityReadingRecord(
+                        "Водомір-1",
+                        LocalDate.of(2026, 11, 2),
+                        35.25,
+                        35.20
+                )
+        );
+
+        repository.add(
+                new UtilityReadingRecord(
+                        "Газовий-лічильник-1",
+                        LocalDate.of(2026, 11, 3),
+                        25.50,
+                        7.96
+                )
+        );
+
+        repository.add(
+                new UtilityReadingRecord(
+                        "Електролічильник-2",
+                        LocalDate.of(2026, 11, 4),
+                        80.75,
+                        4.32
+                )
+        );
+
+        repository.add(
+                new UtilityReadingRecord(
+                        "Лічильник, \"нічний\"\nрезервний",
+                        LocalDate.of(2026, 11, 5),
+                        42.75,
+                        5.10
+                )
+        );
+
+        return repository;
+    }
+
+    /**
      * Виводить довідку про параметри командного рядка.
      */
     private static void printHelp() {
         System.out.printf(
                 "Використання: java -jar <файл.jar> "
                         + "[--help] [--version] "
-                        + "[--input <файл>] [--output <файл>]%n"
+                        + "[--input <файл>] [--output <файл>] "
+                        + "[--export-csv <файл>] "
+                        + "[--export-json <файл>]%n"
         );
     }
 
@@ -180,7 +411,8 @@ public final class Main {
 
             properties.load(input);
 
-            String version = properties.getProperty("app.version");
+            String version =
+                    properties.getProperty("app.version");
 
             if (version == null || version.isBlank()) {
                 throw new IllegalStateException(
@@ -214,13 +446,16 @@ public final class Main {
     }
 
     /**
-     * Створює об'єкти UtilityReading та обчислює показники варіанта №9.
+     * Створює об'єкти UtilityReading та обчислює
+     * показники варіанта №9.
      *
      * @param lines рядки вхідного файла
-     * @return сформований звіт або null, якщо коректних записів немає
+     * @return сформований звіт або null,
+     *         якщо коректних записів немає
      */
     private static String processLines(List<String> lines) {
-        List<UtilityReading> readings = new ArrayList<>();
+        Repository<UtilityReading> readings =
+                new Repository<>();
 
         for (int lineNumber = 1;
                 lineNumber <= lines.size();
@@ -229,7 +464,9 @@ public final class Main {
             String line = lines.get(lineNumber - 1);
 
             try {
-                UtilityReading reading = UtilityReading.fromCsv(line);
+                UtilityReading reading =
+                        UtilityReading.fromCsv(line);
+
                 readings.add(reading);
 
                 System.out.printf(
@@ -245,7 +482,10 @@ public final class Main {
             }
         }
 
-        if (readings.isEmpty()) {
+        List<UtilityReading> readingSnapshot =
+                readings.all();
+
+        if (readingSnapshot.isEmpty()) {
             System.out.printf(
                     "Не знайдено жодного коректного запису%n"
             );
@@ -253,18 +493,22 @@ public final class Main {
         }
 
         DoubleSummaryStatistics statistics =
-        UtilityReadingQueries.valueStatistics(readings);
+                UtilityReadingQueries.valueStatistics(
+                        readingSnapshot
+                );
 
-double totalConsumption = statistics.getSum();
+        double totalConsumption =
+                statistics.getSum();
 
-double totalCost = readings.stream()
-        .mapToDouble(UtilityReading::calculateCost)
-        .sum();
+        double totalCost = readingSnapshot.stream()
+                .mapToDouble(UtilityReading::calculateCost)
+                .sum();
 
-double maxConsumption = statistics.getMax();
+        double maxConsumption =
+                statistics.getMax();
 
         return formatReport(
-                readings.size(),
+                readingSnapshot.size(),
                 totalConsumption,
                 totalCost,
                 maxConsumption
@@ -301,7 +545,8 @@ double maxConsumption = statistics.getMax();
     }
 
     /**
-     * Записує сформований звіт у файл у кодуванні UTF-8.
+     * Записує сформований звіт у файл
+     * у кодуванні UTF-8.
      *
      * @param output шлях до вихідного файла
      * @param report текст звіту
@@ -309,7 +554,8 @@ double maxConsumption = statistics.getMax();
      */
     private static void writeReport(
             Path output,
-            String report) throws IOException {
+            String report)
+            throws IOException {
 
         Path parent = output.getParent();
 
