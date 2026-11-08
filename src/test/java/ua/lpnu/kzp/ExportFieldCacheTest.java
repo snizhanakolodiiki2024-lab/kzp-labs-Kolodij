@@ -30,4 +30,36 @@ class ExportFieldCacheTest {
         assertSame(first, second);
         assertEquals(4, first.size());
     }
+
+    @Test
+void includesAnnotatedFieldsFromSuperclass()
+        throws Exception {
+
+    List<Field> fields =
+            ExportFieldCache.fieldsFor(
+                    ChildExportRecord.class
+            );
+
+    assertEquals(2, fields.size());
+
+    assertEquals(
+            List.of("childValue", "parentValue"),
+            fields.stream()
+                    .map(Field::getName)
+                    .toList()
+    );
+}
+
+private static class ParentExportRecord {
+
+    @CsvColumn("parent")
+    private final String parentValue = "parent";
+}
+
+private static final class ChildExportRecord
+        extends ParentExportRecord {
+
+    @CsvColumn("child")
+    private final String childValue = "child";
+}
 }

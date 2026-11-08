@@ -1,7 +1,7 @@
 package ua.lpnu.kzp;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -9,6 +9,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Caches fields annotated with CsvColumn for export operations.
+ *
+ * <p>Annotated fields are collected from the specified class
+ * and all of its superclasses except Object.</p>
  */
 final class ExportFieldCache {
 
@@ -19,7 +22,8 @@ final class ExportFieldCache {
     }
 
     /**
-     * Returns cached annotated fields in deterministic order.
+     * Returns cached annotated fields from the class hierarchy
+     * in deterministic order.
      *
      * @param type object class
      * @return annotated fields
@@ -34,11 +38,34 @@ final class ExportFieldCache {
             return cached;
         }
 
-        List<Field> fields = Arrays.stream(type.getDeclaredFields())
-                .filter(field ->
-                        field.isAnnotationPresent(CsvColumn.class))
-                .sorted(Comparator.comparing(Field::getName))
-                .toList();
+        List<Field> fields = new ArrayList<>();
+
+        Class<?> currentType = type;
+
+        while (currentType != null
+                && currentType != Object.class) {
+
+            for (Field field
+                    : currentType.getDeclaredFields()) {
+
+                if (field.isAnnotationPresent(
+                        CsvColumn.class)) {
+
+                    fields.add(field);
+                }
+            }
+
+            currentType = currentType.getSuperclass();
+        }
+
+        fields.sort(
+                Comparator.comparing(Field::getName)
+                        .thenComparing(
+                                field ->
+                                        field.getDeclaringClass()
+                                                .getName()
+                        )
+        );
 
         for (Field field : fields) {
             if (!field.trySetAccessible()) {
@@ -49,7 +76,10 @@ final class ExportFieldCache {
             }
         }
 
-        CACHE.putIfAbsent(type, fields);
+        List<Field> result =
+                List.copyOf(fields);
+
+        CACHE.putIfAbsent(type, result);
 
         return CACHE.get(type);
     }

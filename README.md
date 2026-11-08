@@ -1623,6 +1623,16 @@ CSV export cache ratio:   1.21x
 
 Обидва способи створили однаковий CSV.
 
+### Успадковані поля
+
+`ExportFieldCache` підтримує `@CsvColumn` не лише в поточному класі, а й у його суперкласах до `Object`.
+
+Поля з усієї ієрархії збираються через reflection, після чого сортуються у детермінованому порядку. Це автоматично працює для `CsvExporter<T>` і `JsonExporter<T>`, оскільки обидва експортери використовують спільний кеш.
+
+Підтримку перевірено окремими тестами:
+- отримання анотованих полів із superclass;
+- реальний CSV export одночасно parent- і child-полів.
+
 ## Запуск
 
 CSV:
@@ -1664,7 +1674,7 @@ java -jar target\lab01-5.0.0.jar --input data\input.csv --output out\report.txt
 Після Lab 5:
 
 ```text
-Tests run: 121, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 123, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
@@ -1718,7 +1728,7 @@ BUILD SUCCESS
 Фінальний локальний результат:
 
 ```text
-Tests run: 121, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 123, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
@@ -1742,7 +1752,7 @@ CI налаштовано на:
 
 - Java 21;
 - Maven Wrapper;
-- 121 тест;
+- 123 тест;
 - SpotBugs;
 - перевірка версії;
 - створення CSV;
@@ -1797,7 +1807,7 @@ Closes #26
 - створено спільний `Exporter<T>` ⭐;
 - реалізовано reflection field cache ⭐;
 - виміряно ефект кешування ⭐;
-- кількість тестів збільшено з 79 до 121;
+- кількість тестів збільшено з 79 до 123;
 - `verify` і SpotBugs проходять успішно;
 - версію оновлено до `5.0.0`;
 - CI налаштовано для Ubuntu, Windows і macOS;

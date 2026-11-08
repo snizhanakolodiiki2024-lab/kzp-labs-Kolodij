@@ -2954,7 +2954,7 @@ failed to write CSV file: <path>
 Після Lab 5:
 
 ```text
-Tests run: 121, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 123, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
@@ -3046,7 +3046,7 @@ BUILD SUCCESS
 Фінальна локальна перевірка:
 
 ```text
-Tests run: 121, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 123, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
@@ -3170,6 +3170,18 @@ assertEquals(
 
 Тобто оптимізація не змінює результат.
 
+Додатково реалізовано підтримку успадкованих полів, позначених `@CsvColumn`. `ExportFieldCache` проходить ієрархію класів від поточного класу до `Object`, збирає анотовані поля з кожного superclass і формує спільний детерміновано відсортований список. Завдяки цьому однакова підтримка успадкованих полів автоматично використовується як у `CsvExporter<T>`, так і в `JsonExporter<T>`.
+
+Підтримку перевірено двома окремими тестами: тест кешу підтверджує отримання `@CsvColumn` полів із superclass, а інтеграційний тест `CsvExporter` підтверджує фактичний експорт одночасно parent- і child-полів.
+
+Після додавання цього бонусу фінальний локальний результат:
+
+```text
+Tests run: 123, Failures: 0, Errors: 0, Skipped: 0
+SpotBugs: 0 bugs, 0 errors/warnings
+BUILD SUCCESS
+```
+
 ### GitHub Actions
 
 Workflow запускає:
@@ -3185,7 +3197,7 @@ macos-latest
 - Java 21;
 - Maven Wrapper;
 - Maven `verify`;
-- 121 тест;
+- 123  тест;
 - SpotBugs;
 - перевірку `--version`;
 - CSV export;
@@ -3241,7 +3253,7 @@ Closes #26
 До Pull Request додаються:
 
 - локальний результат `verify`;
-- `121` зелений тест;
+- `123` зелений тест;
 - приклад CSV;
 - результат round-trip;
 - таблиця помилок;
@@ -3300,7 +3312,7 @@ cache
 
 ```text
 Lab 4 -> 79
-Lab 5 -> 121
+Lab 5 -> 123
 ```
 
 ---
@@ -3573,7 +3585,7 @@ object -> CSV -> object
 - 5 початкових об'єктів відновлюються як 5 рівних об'єктів;
 - multiline CSV містить 7 фізичних рядків;
 - збережено попередній контрольний звіт;
-- кількість тестів збільшено з 79 до 121;
+- кількість тестів збільшено з 79 до 123;
 - `verify` і SpotBugs проходять успішно;
 - створюється executable JAR;
 - версію оновлено до `5.0.0`;
@@ -3584,6 +3596,7 @@ object -> CSV -> object
 - виконано performance comparison на 1000 записах і 50 експортів ⭐;
 - cached export у контрольному запуску показав співвідношення `1.21x`;
 - artifacts містять JAR, CSV та JSON.
+- підтримка успадкованих `@CsvColumn` полів через спільний reflection cache.
 
 Створений файл:
 

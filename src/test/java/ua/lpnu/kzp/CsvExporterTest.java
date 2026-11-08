@@ -225,4 +225,66 @@ void preservesFileWriteErrorCause() {
 
     assertTrue(exception.getCause() instanceof java.io.IOException);
 }
+
+@Test
+void exportsAnnotatedFieldsFromSuperclass()
+        throws Exception {
+
+    Path path =
+            temporaryDirectory.resolve(
+                    "inherited-fields.csv"
+            );
+
+    ChildExportRecord record =
+            new ChildExportRecord(
+                    "parent-value",
+                    "child-value"
+            );
+
+    CsvExporter.write(
+            path,
+            ChildExportRecord.class,
+            List.of(record)
+    );
+
+    String csv = Files.readString(
+            path,
+            StandardCharsets.UTF_8
+    );
+
+    String expected =
+            "child,parent"
+                    + System.lineSeparator()
+                    + "child-value,parent-value"
+                    + System.lineSeparator();
+
+    assertEquals(expected, csv);
+}
+
+private static class ParentExportRecord {
+
+    @CsvColumn("parent")
+    private final String parentValue;
+
+    private ParentExportRecord(
+            String parentValue) {
+
+        this.parentValue = parentValue;
+    }
+}
+
+private static final class ChildExportRecord
+        extends ParentExportRecord {
+
+    @CsvColumn("child")
+    private final String childValue;
+
+    private ChildExportRecord(
+            String parentValue,
+            String childValue) {
+
+        super(parentValue);
+        this.childValue = childValue;
+    }
+}
 }
