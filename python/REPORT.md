@@ -213,11 +213,7 @@ DictReader використовує перший рядок як назви
 ### List comprehension
 
 ```python
-[
-    record
-    for record in records
-    if float(record["value"]) > threshold
-]
+[record for record in records if float(record["value"]) > threshold]
 ```
 
 Формує новий список записів, що відповідають
