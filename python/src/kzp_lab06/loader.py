@@ -2,6 +2,7 @@
 
 import csv
 import math
+from collections.abc import Iterator
 from datetime import date
 from pathlib import Path
 
@@ -62,10 +63,8 @@ def parse_date(
         raise DataError(f"Рядок {row_number}: некоректне поле date") from error
 
 
-def load_records(path: Path) -> list[dict[str, object]]:
-    """Читає CSV та повертає список перевірених записів."""
-    records = []
-
+def iter_records(path: Path) -> Iterator[dict[str, object]]:
+    """Потоково читає та перевіряє записи CSV."""
     try:
         with path.open("r", encoding="utf-8", newline="") as source:
             reader = csv.DictReader(source, strict=True)
@@ -84,14 +83,12 @@ def load_records(path: Path) -> list[dict[str, object]]:
                     if None in row:
                         raise DataError(f"Рядок {row_number}: зайві поля")
 
-                    records.append(
-                        {
-                            "meter": parse_text(row, "meter", row_number),
-                            "date": parse_date(row, row_number),
-                            "value": parse_number(row, "value", row_number),
-                            "tariff": parse_number(row, "tariff", row_number),
-                        }
-                    )
+                    yield {
+                        "meter": parse_text(row, "meter", row_number),
+                        "date": parse_date(row, row_number),
+                        "value": parse_number(row, "value", row_number),
+                        "tariff": parse_number(row, "tariff", row_number),
+                    }
 
             except csv.Error as error:
                 raise DataError(f"Рядок {reader.line_num}: пошкоджений CSV") from error
@@ -99,4 +96,7 @@ def load_records(path: Path) -> list[dict[str, object]]:
     except (OSError, UnicodeError) as error:
         raise DataError(f"Не вдалося прочитати файл: {path}") from error
 
-    return records
+
+def load_records(path: Path) -> list[dict[str, object]]:
+    """Читає CSV та повертає список перевірених записів."""
+    return list(iter_records(path))

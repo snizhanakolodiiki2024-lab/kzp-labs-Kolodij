@@ -19,3 +19,6 @@ dist/
 
 # Generated reports
 reports/*.txt
+
+# Generated benchmark dataset
+reports/large-input.csv
