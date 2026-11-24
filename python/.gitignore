@@ -1,0 +1,21 @@
+# Virtual environments
+.venv/
+.venv-*/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Testing and linting
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Packaging
+build/
+dist/
+*.egg-info/
+
+# Generated reports
+reports/*.txt
