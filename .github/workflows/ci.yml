@@ -19,6 +19,10 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
+    defaults:
+      run:
+        working-directory: java
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -29,6 +33,7 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
+          cache-dependency-path: java/pom.xml
 
       - name: Show CI build number
         run: echo "CI build ${{ github.run_number }}"
@@ -74,7 +79,7 @@ jobs:
         with:
           name: lab5-${{ matrix.os }}-${{ github.run_number }}
           path: |
-            target/${{ env.JAR_NAME }}
-            out/lab5-readings.csv
-            out/lab5-readings.json
+            java/target/${{ env.JAR_NAME }}
+            java/out/lab5-readings.csv
+            java/out/lab5-readings.json
           if-no-files-found: error
